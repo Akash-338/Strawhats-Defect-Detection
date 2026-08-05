@@ -3,351 +3,764 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RVCE Inspection Dashboard</title>
+  <title>SafePath - Defect Detection</title>
   <style>
-    :root {
-      --bg: #0b1020;
-      --panel: rgba(15, 23, 42, 0.82);
-      --panel-strong: #111827;
-      --text: #e5eefc;
-      --muted: #94a3b8;
-      --accent: #4ade80;
-      --warn: #f59e0b;
-      --danger: #f87171;
-      --line: rgba(148, 163, 184, 0.16);
-      --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-    }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
     body {
       margin: 0;
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(34, 197, 94, 0.22), transparent 32%),
-        radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.2), transparent 28%),
-        linear-gradient(180deg, #050816 0%, #0b1020 55%, #070b14 100%);
+      padding: 0;
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
     }
 
-    .shell {
-      min-height: 100%;
-      padding: 28px;
-      display: grid;
-      gap: 20px;
-      grid-template-columns: 1.25fr 0.75fr;
+    /* Header */
+    .header {
+      background-color: #111;
+      padding: 12px 20px;
+      border-bottom: 1px solid #333;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .header span {
+      color: #888;
+      font-size: 12px;
     }
 
-    .hero, .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
+    /* API bar */
+    .api-bar {
+      background-color: #111;
+      padding: 10px 20px;
+      border-bottom: 1px solid #333;
+    }
+    .api-bar label {
+      color: #888;
+      font-size: 12px;
+      margin-right: 8px;
+    }
+    .api-bar input {
+      background-color: #222;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 6px 10px;
+      font-size: 13px;
+      width: 300px;
+      border-radius: 4px;
     }
 
-    .hero {
-      padding: 28px;
-      display: grid;
-      gap: 20px;
-      align-content: start;
+    /* Buttons area */
+    .buttons {
+      padding: 16px 20px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+    .btn {
+      padding: 10px 28px;
+      margin: 4px 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      border: none;
+    }
+    .btn-upload {
+      background-color: #fff;
+      color: #000;
+    }
+    .btn-upload:hover {
+      background-color: #ddd;
+    }
+    .btn-live {
+      background-color: transparent;
+      color: #fff;
+      border: 1px solid #555;
+    }
+    .btn-live:hover {
+      background-color: #222;
+    }
+    .btn-stop {
+      background-color: transparent;
+      color: #aaa;
+      border: 1px solid #555;
     }
 
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
+    /* Status text */
+    .status-bar {
+      padding: 8px 20px;
+      color: #666;
+      font-size: 12px;
+      border-bottom: 1px solid #222;
+    }
+
+    /* Content area - two columns */
+    .content {
+      width: 100%;
+      overflow: hidden;
+    }
+    .left-col {
+      float: left;
+      width: 50%;
+      border-right: 1px solid #222;
+      min-height: 400px;
+    }
+    .right-col {
+      float: left;
+      width: 49%;
+      min-height: 400px;
+    }
+
+    /* Panel */
+    .panel-title {
+      padding: 8px 16px;
+      font-size: 11px;
+      color: #666;
       text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 0.74rem;
-      font-weight: 700;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #222;
+    }
+    .panel-content {
+      padding: 16px;
+      text-align: center;
+    }
+    .panel-content img {
+      max-width: 100%;
+      max-height: 350px;
+    }
+    .panel-content video {
+      max-width: 100%;
+      max-height: 350px;
     }
 
-    .eyebrow::before {
-      content: "";
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 24px rgba(74, 222, 128, 0.65);
+    /* Placeholder text */
+    .placeholder {
+      color: #444;
+      padding: 80px 20px;
+      font-size: 13px;
     }
 
-    h1 {
-      margin: 0;
-      font-size: clamp(2.2rem, 5vw, 4.6rem);
-      line-height: 0.95;
-      letter-spacing: -0.05em;
-      max-width: 10ch;
+    /* Results */
+    .result-box {
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 14px;
+      margin-bottom: 10px;
     }
-
-    .subcopy {
-      max-width: 62ch;
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.65;
+    .result-box.pass {
+      border-color: #555;
     }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
+    .result-box.fail {
+      border-color: #777;
     }
-
-    .card {
-      padding: 18px;
-      border-radius: 18px;
-      background: rgba(15, 23, 42, 0.92);
-      border: 1px solid var(--line);
-      min-height: 112px;
-    }
-
-    .card-label {
-      color: var(--muted);
-      font-size: 0.82rem;
-      margin-bottom: 12px;
-    }
-
-    .card-value {
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-    }
-
-    .card-note {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 0.86rem;
-    }
-
-    .panel {
-      padding: 22px;
-      display: grid;
-      gap: 16px;
-      align-content: start;
-    }
-
-    .panel h2 {
-      margin: 0;
-      font-size: 1.1rem;
-      letter-spacing: -0.02em;
-    }
-
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(17, 24, 39, 0.88);
-      border: 1px solid var(--line);
-    }
-
-    .status-label {
-      color: var(--muted);
-      font-size: 0.85rem;
-    }
-
-    .status-value {
-      font-weight: 700;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      width: fit-content;
-      border: 1px solid var(--line);
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: var(--warn);
-      box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
-    }
-
-    .feed {
-      display: grid;
-      gap: 10px;
-    }
-
-    .feed-item {
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: rgba(17, 24, 39, 0.72);
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: center;
-    }
-
-    .feed-item strong {
-      display: block;
+    .result-label {
+      font-size: 18px;
+      font-weight: bold;
       margin-bottom: 4px;
     }
-
-    .feed-item span {
-      color: var(--muted);
-      font-size: 0.86rem;
+    .result-detail {
+      font-size: 12px;
+      color: #888;
     }
 
-    .footnote {
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.5;
+    .counts-row {
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .count-box {
+      float: left;
+      width: 48%;
+      margin-right: 2%;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .count-box-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .count-box-value {
+      font-size: 20px;
+      font-weight: bold;
     }
 
-    @media (max-width: 980px) {
-      .shell { grid-template-columns: 1fr; }
-      .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .defect-row {
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 8px 12px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      overflow: hidden;
+    }
+    .defect-conf {
+      float: right;
+      color: #888;
+      font-size: 12px;
     }
 
-    @media (max-width: 620px) {
-      .shell { padding: 16px; }
-      .hero, .panel { padding: 18px; border-radius: 18px; }
-      .stats { grid-template-columns: 1fr; }
-      h1 { max-width: none; }
+    .section-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      margin-top: 10px;
+    }
+
+    /* Info rows for static result */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .info-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #222;
+      font-size: 13px;
+    }
+    .info-table td:first-child {
+      color: #666;
+      width: 40%;
+    }
+    .info-table td:last-child {
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* Hidden file input */
+    #file-input {
+      display: none;
+    }
+
+    /* Toggle switch */
+    .toggle-wrap {
+      display: inline-block;
+      vertical-align: middle;
+      margin: 0 12px;
+    }
+    .toggle-label {
+      font-size: 12px;
+      color: #888;
+      vertical-align: middle;
+      margin: 0 6px;
+    }
+    .toggle-label.active {
+      color: #fff;
+      font-weight: bold;
+    }
+    .toggle-switch {
+      display: inline-block;
+      vertical-align: middle;
+      width: 44px;
+      height: 22px;
+      background-color: #333;
+      border-radius: 11px;
+      cursor: pointer;
+      position: relative;
+      border: 1px solid #555;
+    }
+    .toggle-knob {
+      width: 18px;
+      height: 18px;
+      background-color: #fff;
+      border-radius: 50%;
+      position: absolute;
+      top: 1px;
+      left: 2px;
+    }
+    .toggle-switch.on .toggle-knob {
+      left: 23px;
+    }
+
+    /* Manual buttons */
+    .manual-buttons {
+      margin-top: 12px;
+      text-align: center;
+    }
+    .btn-pass {
+      padding: 10px 32px;
+      margin: 4px 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background-color: #111;
+      color: #fff;
+    }
+    .btn-pass:hover {
+      background-color: #222;
+      border-color: #888;
+    }
+    .btn-reject {
+      padding: 10px 32px;
+      margin: 4px 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #555;
+      background-color: #111;
+      color: #fff;
+    }
+    .btn-reject:hover {
+      background-color: #222;
+      border-color: #888;
+    }
+
+    /* Clear floats */
+    .clearfix::after {
+      content: "";
+      display: table;
+      clear: both;
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
-      <div class="eyebrow">RVCE Surface Inspection</div>
-      <h1>Live defect monitoring without the blank screen.</h1>
-      <p class="subcopy">
-        This page is wired for the FastAPI backend running on <strong>localhost:8000</strong>.
-        It shows the current inspection status, cumulative counters, and a compact event feed so the
-        browser at <strong>127.0.0.1:5500</strong> actually renders something useful.
-      </p>
 
-      <div class="stats">
-        <div class="card">
-          <div class="card-label">Total scanned</div>
-          <div class="card-value" id="total-scanned">0</div>
-          <div class="card-note">Images or frames processed</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Total defects</div>
-          <div class="card-value" id="total-defects">0</div>
-          <div class="card-note">Detected defect instances</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Passed</div>
-          <div class="card-value" id="passed">0</div>
-          <div class="card-note">Accepted samples</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Failed</div>
-          <div class="card-value" id="failed">0</div>
-          <div class="card-note">Rejected samples</div>
-        </div>
+  <!-- Header -->
+  <div class="header">
+    <h1>SafePath</h1>
+    <span id="status-text">Idle</span>
+  </div>
+
+  <!-- API URL -->
+  <div class="api-bar">
+    <label>API URL:</label>
+    <input type="text" id="api-url" value="http://127.0.0.1:8000" placeholder="http://your-server:port">
+  </div>
+
+  <!-- Buttons -->
+  <div class="buttons">
+    <input type="file" id="file-input" accept="image/*">
+    <button class="btn btn-upload" onclick="document.getElementById('file-input').click()">Upload Image</button>
+    <button class="btn btn-live" id="btn-live" onclick="toggleLive()">Start Live</button>
+
+    <!-- Mode toggle -->
+    <span class="toggle-wrap">
+      <span class="toggle-label active" id="label-auto">Auto</span>
+      <span class="toggle-switch" id="mode-toggle" onclick="toggleMode()">
+        <span class="toggle-knob"></span>
+      </span>
+      <span class="toggle-label" id="label-manual">Manual</span>
+    </span>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar" id="status-bar"></div>
+
+  <!-- Two columns: Input and Results -->
+  <div class="content clearfix">
+
+    <!-- Left: Input image -->
+    <div class="left-col">
+      <div class="panel-title">Input</div>
+      <div class="panel-content" id="input-area">
+        <div class="placeholder" id="input-placeholder">Upload an image or start live camera</div>
+        <img id="input-img" alt="Input" style="display:none;">
+        <video id="input-video" autoplay muted playsinline style="display:none;"></video>
       </div>
-    </section>
+    </div>
 
-    <aside class="panel">
-      <h2>System status</h2>
-      <div class="status-row">
-        <div>
-          <div class="status-label">Backend</div>
-          <div class="status-value" id="backend-state">Checking...</div>
+    <!-- Right: Results -->
+    <div class="right-col">
+      <div class="panel-title">Results</div>
+      <div class="panel-content" id="results-area" style="text-align:left;">
+
+        <div class="placeholder" id="idle-msg" style="display:none;">No results yet</div>
+
+        <!-- Verdict -->
+        <div class="result-box" id="verdict-box" style="display:none;">
+          <div class="result-label" id="verdict-label">—</div>
+          <div class="result-detail" id="verdict-detail"></div>
         </div>
-        <div class="badge"><span class="dot" id="status-dot"></span><span id="status-text">Connecting</span></div>
-      </div>
 
-      <div class="feed" id="feed">
-        <div class="feed-item">
-          <div>
-            <strong>Dashboard ready</strong>
-            <span>The page now renders from a real HTML entrypoint.</span>
-          </div>
-          <span>now</span>
+        <!-- Info table -->
+        <div id="info-section">
+          <table class="info-table" id="info-table">
+            <tr><td>Material</td><td id="info-material">—</td></tr>
+            <tr><td>Defect Type</td><td id="info-defect-type">—</td></tr>
+            <tr><td>Severity</td><td id="info-severity">—</td></tr>
+            <tr><td>Defect Count</td><td id="info-count">—</td></tr>
+            <tr><td>Bent</td><td id="info-bent">—</td></tr>
+          </table>
         </div>
+
+        <!-- Defect list -->
+        <div id="defect-section" style="display:none;">
+          <div class="section-label">Detected Classes</div>
+          <div id="defect-list"></div>
+        </div>
+
+        <!-- Manual mode: Pass / Reject buttons -->
+        <div class="manual-buttons" id="manual-buttons">
+          <p style="color:#888; font-size:12px; margin-bottom:10px;">Your call — pass or reject this?</p>
+          <button class="btn-pass" onclick="manualDecision('PASS')">✅ Pass</button>
+          <button class="btn-reject" onclick="manualDecision('FAIL')">❌ Reject</button>
+        </div>
+
       </div>
+    </div>
 
-      <p class="footnote">
-        If the backend is not running, this page still loads and shows fallback values. Start the API with
-        <strong>uvicorn inference.api_server:app --host 0.0.0.0 --port 8000 --reload</strong> for live stats.
-      </p>
-    </aside>
-  </main>
+  </div>
 
-  <script>
-    const API_BASE = 'http://127.0.0.1:8000';
+<script>
+// ─── State ───────────────────────────────
+var liveMode = false;
+var liveStream = null;
+var ws = null;
+var webcamPollTimer = null;
+var isManualMode = false;
+var lastResult = null;  // holds API result in manual mode
 
-    const els = {
-      totalScanned: document.getElementById('total-scanned'),
-      totalDefects: document.getElementById('total-defects'),
-      passed: document.getElementById('passed'),
-      failed: document.getElementById('failed'),
-      backendState: document.getElementById('backend-state'),
-      statusText: document.getElementById('status-text'),
-      statusDot: document.getElementById('status-dot'),
-      feed: document.getElementById('feed'),
+// Get the API URL from the input field
+function getAPI() {
+  return document.getElementById('api-url').value.replace(/\/+$/, '');
+}
+
+// ─── File Upload ─────────────────────────
+document.getElementById('file-input').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  if (liveMode) stopLive();
+  runInference(file);
+  e.target.value = '';
+});
+
+// ─── Run Inference on an Image ───────────
+function runInference(file) {
+  setStatus('Processing...');
+
+  // Show the uploaded image
+  var url = URL.createObjectURL(file);
+  showInputImage(url);
+
+  // Send to API
+  var fd = new FormData();
+  fd.append('image', file);
+
+  fetch(getAPI() + '/detect', {
+    method: 'POST',
+    body: fd
+  })
+  .then(function(res) {
+    if (res.ok) return res.json();
+    throw new Error('API error');
+  })
+  .then(function(result) {
+    showResult(result);
+    setStatus('Done');
+  })
+  .catch(function() {
+    setStatus('API not connected');
+  });
+}
+
+// ─── Live Mode ───────────────────────────
+function toggleLive() {
+  if (liveMode) {
+    stopLive();
+    return;
+  }
+
+  // Try API first, fallback to webcam
+  fetch(getAPI() + '/health', { signal: AbortSignal.timeout(1500) })
+    .then(function(r) {
+      if (r.ok) {
+        startAPILive();
+      } else {
+        startWebcamLive();
+      }
+    })
+    .catch(function() {
+      startWebcamLive();
+    });
+}
+
+function startAPILive() {
+  liveMode = true;
+  setStatus('Live (API stream)');
+
+  var img = document.getElementById('input-img');
+  img.src = getAPI() + '/video_feed?t=' + Date.now();
+  img.style.display = 'block';
+  document.getElementById('input-placeholder').style.display = 'none';
+  document.getElementById('input-video').style.display = 'none';
+
+  connectWS();
+
+  document.getElementById('btn-live').textContent = 'Stop';
+  document.getElementById('btn-live').className = 'btn btn-stop';
+}
+
+function startWebcamLive() {
+  navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    .then(function(stream) {
+      liveStream = stream;
+      liveMode = true;
+      setStatus('Live (webcam)');
+
+      var video = document.getElementById('input-video');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      document.getElementById('input-placeholder').style.display = 'none';
+      document.getElementById('input-img').style.display = 'none';
+
+      document.getElementById('btn-live').textContent = 'Stop';
+      document.getElementById('btn-live').className = 'btn btn-stop';
+
+      pollWebcam();
+    })
+    .catch(function() {
+      setStatus('Camera access denied');
+    });
+}
+
+function pollWebcam() {
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext('2d');
+
+  function poll() {
+    if (!liveMode) return;
+    var vid = document.getElementById('input-video');
+    if (vid.readyState < 2) {
+      webcamPollTimer = setTimeout(poll, 500);
+      return;
+    }
+
+    canvas.width = vid.videoWidth || 640;
+    canvas.height = vid.videoHeight || 480;
+    ctx.drawImage(vid, 0, 0);
+
+    canvas.toBlob(function(blob) {
+      if (!blob) return;
+
+      var fd = new FormData();
+      fd.append('image', blob, 'frame.jpg');
+
+      fetch(getAPI() + '/detect', {
+        method: 'POST',
+        body: fd,
+        signal: AbortSignal.timeout(3000)
+      })
+      .then(function(r) { if (r.ok) return r.json(); throw new Error(); })
+      .then(function(result) { showResult(result); })
+      .catch(function() { /* API not available, skip */ });
+
+      webcamPollTimer = setTimeout(poll, 800);
+    }, 'image/jpeg', 0.85);
+  }
+  poll();
+}
+
+function stopLive() {
+  liveMode = false;
+
+  if (liveStream) {
+    liveStream.getTracks().forEach(function(t) { t.stop(); });
+    liveStream = null;
+  }
+  if (ws) { ws.close(); ws = null; }
+  if (webcamPollTimer) { clearTimeout(webcamPollTimer); webcamPollTimer = null; }
+
+  document.getElementById('input-video').srcObject = null;
+  document.getElementById('input-video').style.display = 'none';
+  document.getElementById('input-img').style.display = 'none';
+  document.getElementById('input-placeholder').style.display = 'block';
+
+  document.getElementById('btn-live').textContent = 'Start Live';
+  document.getElementById('btn-live').className = 'btn btn-live';
+  setStatus('Idle');
+}
+
+// ─── WebSocket (for API live stats) ──────
+function connectWS() {
+  try {
+    var wsUrl = getAPI().replace('http', 'ws');
+    ws = new WebSocket(wsUrl + '/ws/live');
+    ws.onmessage = function(evt) {
+      var d = JSON.parse(evt.data);
+      showResult({
+        material: d.material,
+        verdict: d.verdict,
+        confidence: d.confidence,
+        detections: (d.detections || []).map(function(x) {
+          return { label: x.class || x.label, conf: x.conf };
+        })
+      });
     };
+    ws.onerror = function() {};
+    ws.onclose = function() { if (liveMode) setTimeout(connectWS, 2000); };
+  } catch(e) {}
+}
 
-    function setStatus(state, text, color) {
-      els.backendState.textContent = state;
-      els.statusText.textContent = text;
-      els.statusDot.style.background = color;
-      els.statusDot.style.boxShadow = `0 0 16px ${color}66`;
+// ─── Show Input Image ────────────────────
+function showInputImage(src) {
+  document.getElementById('input-placeholder').style.display = 'none';
+  document.getElementById('input-video').style.display = 'none';
+  var img = document.getElementById('input-img');
+  img.src = src;
+  img.style.display = 'block';
+}
+
+// ─── Show Result ─────────────────────────
+function showResult(r) {
+  lastResult = r;
+  var dets = r.detections || [];
+  var mat = (r.material || '').toUpperCase();
+  var severity = r.severity || '—';
+  var bent = r.bent || '—';
+  var defectType = r.defect_type || '—';
+
+  // Hide idle message
+  document.getElementById('idle-msg').style.display = 'none';
+
+  // Fill info table
+  document.getElementById('info-material').textContent = mat || '—';
+  document.getElementById('info-defect-type').textContent = defectType;
+  document.getElementById('info-severity').textContent = severity;
+  document.getElementById('info-count').textContent = dets.length;
+  document.getElementById('info-bent').textContent = bent;
+
+  // Defect list
+  if (dets.length > 0) {
+    document.getElementById('defect-section').style.display = 'block';
+    var html = '';
+    for (var i = 0; i < dets.length; i++) {
+      var conf = Math.round((dets[i].conf || 0) * 100);
+      html += '<div class="defect-row">';
+      html += '<span>' + (dets[i].label || 'Unknown') + '</span>';
+      html += '<span class="defect-conf">' + conf + '%</span>';
+      html += '</div>';
     }
+    document.getElementById('defect-list').innerHTML = html;
+  } else {
+    document.getElementById('defect-section').style.display = 'none';
+  }
 
-    function updateStats(stats) {
-      els.totalScanned.textContent = stats.total_scanned ?? 0;
-      els.totalDefects.textContent = stats.total_defects ?? 0;
-      els.passed.textContent = stats.passed ?? 0;
-      els.failed.textContent = stats.failed ?? 0;
+  if (isManualMode) {
+    // In manual mode: hide auto verdict, show pass/reject buttons
+    document.getElementById('verdict-box').style.display = 'none';
+    document.getElementById('manual-buttons').style.display = 'block';
+  } else {
+    // In auto mode: show ML verdict directly
+    var isPass = (r.verdict || '').toUpperCase() === 'PASS';
+    var isFail = (r.verdict || '').toUpperCase() === 'FAIL';
+    document.getElementById('manual-buttons').style.display = 'none';
+    var box = document.getElementById('verdict-box');
+    box.style.display = 'block';
+    box.className = 'result-box ' + (isPass ? 'pass' : isFail ? 'fail' : '');
+    document.getElementById('verdict-label').textContent = isPass ? '✅ PASS' : isFail ? '❌ FAIL' : '—';
+    document.getElementById('verdict-detail').textContent = isPass
+      ? 'No defects detected'
+      : isFail
+      ? dets.length + ' defect' + (dets.length !== 1 ? 's' : '') + ' found'
+      : '';
+  }
+}
+
+// ─── Toggle Mode (Auto / Manual) ─────────
+function toggleMode() {
+  isManualMode = !isManualMode;
+  var toggle = document.getElementById('mode-toggle');
+  var labelAuto = document.getElementById('label-auto');
+  var labelManual = document.getElementById('label-manual');
+
+  if (isManualMode) {
+    toggle.className = 'toggle-switch on';
+    labelAuto.className = 'toggle-label';
+    labelManual.className = 'toggle-label active';
+  } else {
+    toggle.className = 'toggle-switch';
+    labelAuto.className = 'toggle-label active';
+    labelManual.className = 'toggle-label';
+  }
+
+  // Update results display based on the new mode
+  if (lastResult) {
+    showResult(lastResult);
+  } else {
+    document.getElementById('verdict-box').style.display = 'none';
+    document.getElementById('manual-buttons').style.display = 'none';
+  }
+}
+
+// ─── Manual Decision ─────────────────────
+function manualDecision(decision) {
+  var box = document.getElementById('verdict-box');
+  box.style.display = 'block';
+  document.getElementById('manual-buttons').style.display = 'none';
+
+  if (decision === 'PASS') {
+    box.className = 'result-box pass';
+    document.getElementById('verdict-label').textContent = '✅ PASS (Manual)';
+    document.getElementById('verdict-detail').textContent = 'You approved this item';
+  } else {
+    box.className = 'result-box fail';
+    document.getElementById('verdict-label').textContent = '❌ REJECTED (Manual)';
+    document.getElementById('verdict-detail').textContent = 'You rejected this item';
+  }
+}
+
+// ─── Status Bar ──────────────────────────
+function setStatus(text) {
+  document.getElementById('status-bar').textContent = text;
+  document.getElementById('status-text').textContent = text;
+}
+
+// ─── Mock Result (when API is down) ──────
+var STEEL_CLASSES = ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled-in_scale', 'scratches'];
+var WOOD_CLASSES = ['crack', 'knot', 'knot_with_crack', 'missing_knot', 'resin', 'blue_stain'];
+
+function makeMockResult(filename) {
+  var mat = (filename || '').toLowerCase().indexOf('wood') >= 0 ? 'wood' : 'steel';
+  var classes = mat === 'steel' ? STEEL_CLASSES : WOOD_CLASSES;
+  var hasDefect = Math.random() < 0.5;
+  var dets = [];
+
+  if (hasDefect) {
+    var count = Math.floor(Math.random() * 3) + 1;
+    for (var i = 0; i < count; i++) {
+      dets.push({
+        label: classes[Math.floor(Math.random() * classes.length)],
+        conf: +(Math.random() * 0.45 + 0.52).toFixed(2)
+      });
     }
+  }
 
-    function pushFeed(title, detail, time) {
-      const item = document.createElement('div');
-      item.className = 'feed-item';
-      item.innerHTML = `
-        <div>
-          <strong>${title}</strong>
-          <span>${detail}</span>
-        </div>
-        <span>${time}</span>
-      `;
-      els.feed.prepend(item);
-      while (els.feed.children.length > 5) {
-        els.feed.lastElementChild.remove();
-      }
-    }
+  return {
+    material: mat,
+    verdict: hasDefect ? 'FAIL' : 'PASS',
+    confidence: hasDefect ? Math.max.apply(null, dets.map(function(d) { return d.conf; })) : Math.random() * 0.2,
+    detections: dets
+  };
+}
 
-    async function refresh() {
-      try {
-        const [healthRes, statsRes] = await Promise.all([
-          fetch(`${API_BASE}/health`),
-          fetch(`${API_BASE}/stats`),
-        ]);
+// ─── Static demo result on page load ─────
+var STATIC_RESULT = {
+  material: 'steel',
+  verdict: 'FAIL',
+  defect_type: 'Surface Scratch',
+  severity: 'Medium',
+  bent: 'No',
+  confidence: 0.87,
+  detections: [
+    { label: 'scratches', conf: 0.87 },
+    { label: 'pitted_surface', conf: 0.72 },
+    { label: 'inclusion', conf: 0.63 }
+  ]
+};
 
-        if (!healthRes.ok || !statsRes.ok) {
-          throw new Error('Backend returned an error');
-        }
+// Show static result on load (default to auto mode)
+isManualMode = false;
+document.getElementById('mode-toggle').className = 'toggle-switch';
+document.getElementById('label-auto').className = 'toggle-label active';
+document.getElementById('label-manual').className = 'toggle-label';
+showResult(STATIC_RESULT);
+</script>
 
-        const health = await healthRes.json();
-        const stats = await statsRes.json();
-        updateStats(stats);
-        setStatus('Online', health.status || 'healthy', '#4ade80');
-        pushFeed('Backend healthy', 'FastAPI is responding on port 8000.', 'live');
-      } catch (error) {
-        setStatus('Offline', 'Using fallback data', '#f59e0b');
-        pushFeed('Backend unavailable', 'Start the API to stream live counters.', 'retrying');
-      }
-    }
-
-    refresh();
-    setInterval(refresh, 5000);
-  </script>
 </body>
 </html>
