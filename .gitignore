@@ -1,0 +1,13 @@
+data/ 
+data_share/ 
+runs/ 
+*.zip 
+*.pt 
+*.pth 
+*.docx 
+*.pdf 
+*.xlsx 
+*.txt 
+.venv/ 
+__pycache__/ 
+.DS_Store 

@@ -1,0 +1,6 @@
+path: ../data/processed/wood_3k
+train: train/images
+val: val/images
+test: test/images
+nc: 10
+names: ['live_knot', 'dead_knot', 'knot_with_crack', 'crack', 'resin', 'marrow', 'quartzite', 'missing_knot', 'blue_stain', 'overgrown']

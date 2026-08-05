@@ -1,0 +1,42 @@
+model:
+  backbone: yolov10m
+  num_classes: 15
+  fusion_dim: 128
+  fusion_heads: 4
+  morphology_features: 11
+  morphology_tau: 10.0
+
+training:
+  optimizer: AdamW
+  learning_rate: 0.005     # YOLO baseline stages 2/3/4 (halved for batch=8)
+  fusion_lr: 0.0001        # Stage 5 morphology fusion AdamW (much lower for stability)
+  lr_scheduler: CosineAnnealing
+  batch_size: 4
+  epochs_baseline: 150
+  epochs_fusion: 50
+  weight_decay: 0.0001
+  image_size: 800
+  alpha: 0.5  # CCE loss weight
+  lambda_morph: 0.1  # morphology consistency weight
+  early_stopping_patience: 15
+  
+dsp:
+  fir_cutoff: 0.3
+  fir_order: 5
+  matrix_norm: zscore
+
+augmentation:
+  rotation: 30
+  hflip: 0.5
+  vflip: 0.5
+  gaussian_noise_sigma: 0.02
+  brightness_contrast: 0.2
+  crop_scale: [0.8, 1.0]
+  motion_blur_kernel: [5, 15]
+
+paths:
+  dataset_yaml: data/processed/steel_unified/dataset.yaml
+  steel_weights: runs/steel/train/weights/best.pt
+  aluminum_weights: runs/aluminum/train/weights/best.pt
+  wood_weights: runs/wood/train/weights/best.pt
+  fusion_weights: runs/morphology_fusion/best.pt
