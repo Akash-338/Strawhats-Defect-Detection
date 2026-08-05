@@ -1,6 +1,6 @@
 # Strawhats Defect Detection 2026 🔍
 
-**Team SafePath | RVCE Hackathon 2026**
+** Strawhats Defect Detection 2026 | RVCE Hackathon 2026**
 *Problem Statement 5: Automated Inspection System for Cracks & Fractures in Finished Materials*
 
 ---
