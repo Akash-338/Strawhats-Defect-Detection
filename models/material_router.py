@@ -3,6 +3,7 @@ import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
 import numpy as np
+import cv2
 
 # Assuming Ultralytics YOLOv8 is used
 try:
@@ -62,9 +63,29 @@ class MaterialRouter:
             # Send to device if YOLO API supports it, usually handled automatically in ultralytics
         return self.yolo_models[material]
 
-    def classify_material(self, image: Image.Image) -> tuple[str, float]:
+    def classify_material(self, image) -> tuple[str, float]:
         """Returns (material_name, confidence)"""
-        input_tensor = self.transform(image).unsqueeze(0).to(self.device)
+        if isinstance(image, np.ndarray):
+            # 1. Specular reflection check: Polished metals (Steel/Brass/Aluminum) produce strong reflection glare (>210)
+            # Wood is matte and does not produce specular highlights
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            specular_ratio = float(np.mean(gray > 210))
+            if specular_ratio > 0.02:
+                return 'steel', 0.95
+
+            # 2. Organic Wood HSV warm color check:
+            # Wood features warm brown/yellow hues (Hue 3-50) & saturation (>18)
+            hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+            avg_hue = float(np.mean(hsv[:, :, 0]))
+            avg_sat = float(np.mean(hsv[:, :, 1]))
+            if 3.0 <= avg_hue <= 50.0 and avg_sat > 18.0:
+                return 'wood', 0.96
+
+            pil_img = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        else:
+            pil_img = image
+            
+        input_tensor = self.transform(pil_img).unsqueeze(0).to(self.device)
         
         with torch.no_grad():
             outputs = self.classifier(input_tensor)

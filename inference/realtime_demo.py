@@ -202,50 +202,199 @@ class DefectDetector:
                     cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
 
                     # Label background
-                    text  = f'{label}  {conf_score:.2f}'
-                    (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
-                    cv2.rectangle(out, (x1, y1 - th - 6), (x1 + tw + 4, y1), color, -1)
-                    cv2.putText(out, text, (x1 + 2, y1 - 3),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA)
+              # ─── HUD Helpers ──────────────────────────────────────────────────────────────
+def _alpha_rect(img: np.ndarray, x1: int, y1: int, x2: int, y2: int,
+                color: tuple, alpha: float, radius: int = 0) -> None:
+    """Draw a semi-transparent filled rectangle."""
+    overlay = img.copy()
+    if radius > 0:
+        cv2.rectangle(overlay, (x1 + radius, y1), (x2 - radius, y2), color, -1)
+        cv2.rectangle(overlay, (x1, y1 + radius), (x2, y2 - radius), color, -1)
+        for cx, cy in [(x1+radius, y1+radius),(x2-radius, y1+radius),
+                       (x1+radius, y2-radius),(x2-radius, y2-radius)]:
+            cv2.circle(overlay, (cx, cy), radius, color, -1)
+    else:
+        cv2.rectangle(overlay, (x1, y1), (x2, y2), color, -1)
+    cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
 
-                    detections.append({'label': label, 'conf': conf_score, 'box': (x1, y1, x2, y2)})
 
-            return out, detections
-        except Exception as e:
-            logger.error(f"Detection error: {e}")
-            return frame_bgr, []
+def _conf_bar(img: np.ndarray, x: int, y: int, width: int, height: int,
+              value: float, color: tuple) -> None:
+    """Draw a horizontal progress bar."""
+    # Track
+    _alpha_rect(img, x, y, x + width, y + height, (50, 50, 50), 0.8)
+    # Fill
+    fill_w = max(0, int(width * min(1.0, value)))
+    if fill_w > 0:
+        _alpha_rect(img, x, y, x + fill_w, y + height, color, 0.9)
+    # Border
+    cv2.rectangle(img, (x, y), (x + width, y + height), (80, 80, 80), 1, cv2.LINE_AA)
 
 
 # ─── HUD Overlay ──────────────────────────────────────────────────────────────
 def draw_hud(frame: np.ndarray, material: str, mat_conf: float,
              detections: list, fps: float, conf_thresh: float,
              paused: bool, frozen: bool) -> np.ndarray:
-    """Draw a clean semi-transparent HUD overlay."""
+    """Draw a premium semi-transparent HUD overlay."""
     h, w = frame.shape[:2]
-    overlay = frame.copy()
+    has_defect = len(detections) > 0
 
-    # ── Top bar ─────────────────────────────────────────────────────────────
-    cv2.rectangle(overlay, (0, 0), (w, 65), (20, 20, 20), -1)
-    cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
-
+    # ── Material colour ──────────────────────────────────────────────────────
     mat_color = MATERIAL_COLORS.get(material, (200, 200, 200))
-    cv2.putText(frame, f'Material: {material.upper()}  ({mat_conf*100:.0f}%)',
-                (12, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.7, mat_color, 2, cv2.LINE_AA)
-    cv2.putText(frame, f'FPS: {fps:4.1f}   Conf: {conf_thresh:.2f}   Defects: {len(detections)}',
-                (12, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1, cv2.LINE_AA)
+    pass_color = (60, 220, 80)    # green
+    fail_color = (60, 70, 240)    # red (BGR)
 
-    # ── Right side: detection list ───────────────────────────────────────────
+    # ════════════════════════════════════════════════════════════════════════
+    # TOP BAR  (full-width semi-transparent strip)
+    # ════════════════════════════════════════════════════════════════════════
+    _alpha_rect(frame, 0, 0, w, 58, (10, 12, 22), 0.82)
+    cv2.line(frame, (0, 58), (w, 58), (50, 60, 100), 1)
+
+    # Material icon + name
+    mat_icon = '🔩' if material == 'steel' else '🪵'
+    mat_label = f"{material.upper()}"
+    mat_tag_w = 160
+    _alpha_rect(frame, 8, 8, 8 + mat_tag_w, 50, mat_color, 0.18, radius=6)
+    cv2.rectangle(frame, (8, 8), (8 + mat_tag_w, 50), mat_color, 1, cv2.LINE_AA)
+    cv2.putText(frame, mat_label, (20, 38),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.85, mat_color, 2, cv2.LINE_AA)
+
+    # Material confidence text next to badge
+    cv2.putText(frame, f'Router: {mat_conf*100:.0f}%',
+                (mat_tag_w + 20, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (160, 170, 200), 1, cv2.LINE_AA)
+    cv2.putText(frame, f'Conf thresh: {conf_thresh:.2f}',
+                (mat_tag_w + 20, 46), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (130, 140, 170), 1, cv2.LINE_AA)
+
+    # FPS (right side of top bar)
+    fps_color = (60, 220, 80) if fps >= 15 else (30, 160, 255) if fps >= 8 else (60, 70, 240)
+    fps_str = f'{fps:.1f} FPS'
+    (fw, _), _ = cv2.getTextSize(fps_str, cv2.FONT_HERSHEY_SIMPLEX, 0.85, 2)
+    cv2.putText(frame, fps_str, (w - fw - 14, 38),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.85, fps_color, 2, cv2.LINE_AA)
+
+    # Team badge (top-right, small)
+    badge = 'Team SafePath | RVCE 2026'
+    (bw, _), _ = cv2.getTextSize(badge, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+    cv2.putText(frame, badge, (w - bw - fw - 24, 18),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (80, 88, 120), 1, cv2.LINE_AA)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PASS / REJECT BANNER  (bottom-centre)
+    # ════════════════════════════════════════════════════════════════════════
+    v_color  = fail_color if has_defect else pass_color
+    v_text   = 'REJECT' if has_defect else 'PASS'
+    v_icon   = 'X' if has_defect else 'OK'
+
+    (vw, vh), _ = cv2.getTextSize(v_text, cv2.FONT_HERSHEY_SIMPLEX, 1.5, 3)
+    bx1 = w // 2 - vw // 2 - 28
+    bx2 = w // 2 + vw // 2 + 28
+    by1 = h - 90
+    by2 = h - 38
+
+    _alpha_rect(frame, bx1, by1, bx2, by2, v_color, 0.2, radius=8)
+    cv2.rectangle(frame, (bx1, by1), (bx2, by2), v_color, 2, cv2.LINE_AA)
+    cv2.putText(frame, v_text,
+                (w // 2 - vw // 2, by2 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.5, v_color, 3, cv2.LINE_AA)
+
+    # Defect count badge (left of banner)
+    cnt_text = f'{len(detections)} defect{"s" if len(detections) != 1 else ""}'
+    cv2.putText(frame, cnt_text, (bx1 - 130, by2 - 14),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.58, v_color, 1, cv2.LINE_AA)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # CONFIDENCE BAR  (just above verdict banner)
+    # ════════════════════════════════════════════════════════════════════════
     if detections:
-        panel_w = 230
-        cv2.rectangle(frame, (w - panel_w, 70), (w, 70 + len(detections) * 28 + 10),
-                      (20, 20, 20), -1)
-        for i, d in enumerate(detections[:10]):
-            color = BOX_COLORS[i % len(BOX_COLORS)]
-            cv2.putText(frame, f"  {d['label']}  {d['conf']:.2f}",
-                        (w - panel_w + 4, 94 + i * 28),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 1, cv2.LINE_AA)
+        best_conf = max(d['conf'] for d in detections)
+        bar_x1, bar_y = bx1, by1 - 18
+        bar_w  = bx2 - bx1
+        cv2.putText(frame, f'Best conf: {best_conf:.2f}',
+                    (bar_x1, bar_y - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.44, (160,160,200), 1, cv2.LINE_AA)
+        _conf_bar(frame, bar_x1, bar_y, bar_w, 6, best_conf, v_color)
 
-    # ── Bottom bar: controls ─────────────────────────────────────────────────
+    # ════════════════════════════════════════════════════════════════════════
+    # DETECTION LIST PANEL  (right side, below top bar)
+    # ════════════════════════════════════════════════════════════════════════
+    if detections:
+        panel_w   = 240
+        panel_pad = 10
+        row_h     = 30
+        n         = min(len(detections), 8)
+        px1 = w - panel_w - 4
+        py1 = 64
+        py2 = py1 + panel_pad + n * row_h + panel_pad
+
+        _alpha_rect(frame, px1, py1, w - 4, py2, (12, 15, 30), 0.82, radius=8)
+        cv2.rectangle(frame, (px1, py1), (w - 4, py2), (50, 60, 100), 1, cv2.LINE_AA)
+
+        # Title
+        cv2.putText(frame, 'DETECTIONS', (px1 + 10, py1 + 18),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.48, (130, 140, 180), 1, cv2.LINE_AA)
+
+        for i, det in enumerate(detections[:n]):
+            row_y = py1 + panel_pad + 14 + i * row_h
+            color = BOX_COLORS[i % len(BOX_COLORS)]
+            # Colour dot
+            cv2.circle(frame, (px1 + 14, row_y + 2), 5, color, -1, cv2.LINE_AA)
+            # Label
+            cv2.putText(frame, det['label'],
+                        (px1 + 26, row_y + 8),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 235, 255), 1, cv2.LINE_AA)
+            # Confidence bar
+            _conf_bar(frame, px1 + 26, row_y + 12, 110, 5, det['conf'], color)
+            # Conf value
+            cv2.putText(frame, f"{det['conf']:.2f}",
+                        (px1 + 144, row_y + 18),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.44, color, 1, cv2.LINE_AA)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PIPELINE STEPS  (left side, bottom)
+    # ════════════════════════════════════════════════════════════════════════
+    steps = [
+        ('1', 'ResNet18 Router',   mat_color),
+        ('2', 'YOLOv10m Detect',   (100, 180, 255)),
+        ('3', 'Morphology Extr.',  (200, 160, 255)),
+        ('4', 'CrossAttn Fusion',  (100, 230, 180)),
+    ]
+    sx, sy = 8, h - 185
+    _alpha_rect(frame, sx, sy, sx + 200, sy + len(steps)*30 + 14, (10, 12, 22), 0.78, radius=6)
+    cv2.rectangle(frame, (sx, sy), (sx + 200, sy + len(steps)*30 + 14), (40, 50, 80), 1)
+    cv2.putText(frame, 'AI PIPELINE', (sx + 8, sy + 14),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.42, (100, 110, 160), 1, cv2.LINE_AA)
+    for i, (num, label, col) in enumerate(steps):
+        ry = sy + 24 + i * 30
+        cv2.circle(frame, (sx + 18, ry + 6), 8, col, -1, cv2.LINE_AA)
+        cv2.putText(frame, num, (sx + 14, ry + 11),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.42, (10, 12, 22), 1, cv2.LINE_AA)
+        cv2.putText(frame, label, (sx + 32, ry + 11),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.44, (200, 210, 240), 1, cv2.LINE_AA)
+        # connector line
+        if i < len(steps) - 1:
+            cv2.line(frame, (sx + 18, ry + 14), (sx + 18, ry + 24), col, 1, cv2.LINE_AA)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # BOTTOM BAR  (controls)
+    # ════════════════════════════════════════════════════════════════════════
+    _alpha_rect(frame, 0, h - 26, w, h, (10, 12, 22), 0.88)
+    cv2.line(frame, (0, h - 26), (w, h - 26), (40, 50, 80), 1)
+    controls = 'Q  Quit    S  Screenshot    P  Pause    SPACE  Freeze    + / -  Confidence'
+    cv2.putText(frame, controls, (12, h - 7),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.42, (100, 110, 160), 1, cv2.LINE_AA)
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PAUSED / FROZEN  overlays
+    # ════════════════════════════════════════════════════════════════════════
+    if paused or frozen:
+        state_text = '[ PAUSED ]' if paused else '[ FROZEN ]  •  SPACE to resume'
+        state_col  = (0, 200, 255)
+        (stw, _), _ = cv2.getTextSize(state_text, cv2.FONT_HERSHEY_SIMPLEX, 1.1, 2)
+        _alpha_rect(frame, w//2 - stw//2 - 20, h//2 - 40, w//2 + stw//2 + 20, h//2 + 20,
+                    (0, 0, 0), 0.65, radius=10)
+        cv2.putText(frame, state_text, (w//2 - stw//2, h//2 + 8),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.1, state_col, 2, cv2.LINE_AA)
+
+    return frame�──────────────────
     cv2.rectangle(frame, (0, h - 28), (w, h), (20, 20, 20), -1)
     controls = 'Q=Quit  S=Screenshot  P=Pause  SPACE=Freeze  +/-=Conf'
     cv2.putText(frame, controls, (8, h - 8),

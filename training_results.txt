@@ -1,0 +1,5 @@
+Training completed at: 2026-08-05T15:57:19.975632
+Total time: 212.3 minutes
+Stages: 1/1 passed
+
+Stage 4 (Morphology Fusion — Steel): PASS

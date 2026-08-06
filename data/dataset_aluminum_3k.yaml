@@ -1,4 +1,4 @@
-path: ../data/processed_aluminum_3k
+path: processed_aluminum_3k
 train: train/images
 val: val/images
 test: test/images

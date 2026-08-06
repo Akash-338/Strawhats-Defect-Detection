@@ -110,7 +110,7 @@ def print_banner():
 |   Architecture: Material Router -> Material-Specific YOLO    |
 |   Dataset: ~16,000 images across 2 materials                 |
 |                                                              |
-|   RVCE Hackathon 2026 -- Team SafePath                       |
+|   RVCE Hackathon 2026 -- Team Strawhat-Pirates               |
 |                                                              |
 +==============================================================+
     """

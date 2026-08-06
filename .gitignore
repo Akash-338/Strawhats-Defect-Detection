@@ -1,13 +1,81 @@
-data/ 
-data_share/ 
-runs/ 
-*.zip 
-*.pt 
-*.pth 
-*.docx 
-*.pdf 
-*.xlsx 
-*.txt 
-.venv/ 
-__pycache__/ 
-.DS_Store 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyTorch & Weights
+*.pth
+*.pt
+*.onnx
+*.engine
+*.tflite
+
+# Data directories (exclude heavy raw/processed assets, keep structures)
+data/NEU-DET/*
+!data/NEU-DET/.gitkeep
+data/Severstal/*
+!data/Severstal/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/real_samples/*
+!data/real_samples/.gitkeep
+data/processed_aluminum_3k/
+demo_samples/steel/
+demo_samples/wood/
+demo_samples/test_split/
+demo_samples/internet_test/
+demo_samples/
+datasets/coco8/labels/train
+demo_samples/clean_demo/
+datasets/coco8/labels/val/
+*.zip
+*.tar.gz
+*.7z
+*.csv
+
+# Runs & Outputs
+runs/
+*.log
+
+# IDE & Operating System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documents & logs (not code)
+*.xlsx
+*.docx
+*.pdf
+*.log
+install_log.txt
+implementation_plan.md
+paper_text.txt
+rules_text.txt
+
+# Dataset configs with absolute paths (regenerate locally)
+data/dataset_aluminum.yaml
+data/dataset_wood.yaml
+data/dataset_steel.yaml
+data/material_classifier/
+data/Aluminum/
+data/Wood/
+data/MVTec/
+data/processed_aluminum/
+data/processed_wood/
+
+data_share/
+data_share.zip
+data.zip
+*.zip
+extracted_paper_text.txt
+FRIEND_SETUP.md

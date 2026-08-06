@@ -1,21 +1,7 @@
-path: D:/Strawhats-Defect-Detection-2026/data/processed/steel_unified
+path: .
 train: train/images
 val: val/images
 test: test/images
+
 nc: 15
-names:
-- crazing
-- inclusion
-- patches
-- pitted_surface
-- rolled_in_scale
-- scratches
-- punching
-- weld_line
-- crescent_gap
-- water_spot
-- oil_spot
-- silk_spot
-- rolled_pit
-- crease
-- waist_folding
+names: ['crazing', 'inclusion', 'patches', 'pitted_surface', 'rolled_in_scale', 'scratches', 'punching', 'weld_line', 'crescent_gap', 'water_spot', 'oil_spot', 'silk_spot', 'rolled_pit', 'crease', 'waist_folding']
