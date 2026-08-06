@@ -6,9 +6,7 @@ import queue
 import logging
 import sys
 
-# Assume these exist from other modules
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-# from hardware.serial_bridge import SerialBridge
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,7 +16,6 @@ class RealTimePipeline:
         self.weights = weights
         self.conf = conf
         
-        # self.serial = SerialBridge(port=serial_port)
         self.frame_queue = queue.Queue(maxsize=5)
         self.result_queue = queue.Queue(maxsize=5)
         
@@ -28,7 +25,6 @@ class RealTimePipeline:
         self.defect_tally = 0
         
     def morphology_thread_worker(self):
-        """Background thread for heavy morphology + cross-attention processing (every 5th frame)"""
         while self.running:
             try:
                 frame = self.frame_queue.get(timeout=1)
@@ -61,17 +57,13 @@ class RealTimePipeline:
                         
                     self.frame_count += 1
                     
-                    # YOLOv10 fast pass
-                    # results = fast_detect(frame)
                     
                     if self.frame_count % 5 == 0:
                         if not self.frame_queue.full():
                             self.frame_queue.put(frame.copy())
                             
-                    # Process background results if ready
                     try:
                         res = self.result_queue.get_nowait()
-                        # Update UI or tally
                     except queue.Empty:
                         pass
                         
@@ -99,7 +91,6 @@ class RealTimePipeline:
             cap.release()
             cv2.destroyAllWindows()
             bg_thread.join()
-            # self.serial.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -110,7 +101,6 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    # Provide dummy Path for the sys.path.append hack in the file if needed, but imported Path above is missing, fix it:
     import sys
     from pathlib import Path
     

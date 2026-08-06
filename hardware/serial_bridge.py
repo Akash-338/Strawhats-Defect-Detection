@@ -34,10 +34,9 @@ class SerialBridge:
                     if self.ser and self.ser.is_open:
                         self.ser.close()
                     self.ser = serial.Serial(self.port, baud, timeout=1)
-                    # Enable DTR/RTS for STM32 CDC / Virtual COM ports
                     self.ser.dtr = True
                     self.ser.rts = True
-                    time.sleep(0.5)  # Allow board USB stack to settle
+                    time.sleep(0.5)  
                     self.baudrate = baud
                     self.connected = True
                     logging.info(f"Connected to Microcontroller (STM32/ESP32/Arduino) on {self.port} at {self.baudrate} baud.")
@@ -66,7 +65,6 @@ class SerialBridge:
 
     def send(self, command: str) -> bool:
         if not self.connected or self.ser is None or not self.ser.is_open:
-            # Auto-reconnect if cable was re-plugged
             if not self.connect():
                 logging.debug(f"Simulating serial send (not connected): {command}")
                 return False

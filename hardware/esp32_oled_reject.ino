@@ -21,7 +21,7 @@
 #define OLED_RESET      -1
 #define OLED_ADDR       0x3C
 
-#define REJECT_HOLD_MS  3000   // 3 SECONDS AUTO-RESET
+#define REJECT_HOLD_MS  3000   
 #define TEST_DELAY_MS   3000
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -92,7 +92,7 @@ void fireReject() {
   rejectStartTime = millis();
 
   servoSweep(SERVO_REJECT);
-  digitalWrite(BUZZER_PIN, LOW); // Active low buzzer ON
+  digitalWrite(BUZZER_PIN, LOW); 
   relayOn(RELAY_CH1_PIN);
   relayOn(RELAY_CH2_PIN);
   digitalWrite(LED_REJECT_PIN, HIGH);
@@ -105,7 +105,7 @@ void clearReject() {
   isRejected = false;
 
   servoSweep(SERVO_HOME);
-  digitalWrite(BUZZER_PIN, HIGH); // Active low buzzer OFF
+  digitalWrite(BUZZER_PIN, HIGH); 
   relayOff(RELAY_CH1_PIN);
   relayOff(RELAY_CH2_PIN);
   digitalWrite(LED_REJECT_PIN, LOW);
@@ -120,7 +120,7 @@ void resetToInitialState() {
   currentDefectCount = 0;
 
   servoSweep(SERVO_HOME);
-  digitalWrite(BUZZER_PIN, HIGH); // Buzzer OFF
+  digitalWrite(BUZZER_PIN, HIGH); 
   relayOff(RELAY_CH1_PIN);
   relayOff(RELAY_CH2_PIN);
   digitalWrite(LED_REJECT_PIN, LOW);
@@ -179,7 +179,7 @@ void setup() {
   pinMode(LED_PASS_PIN, OUTPUT);
   pinMode(LED_REJECT_PIN, OUTPUT);
 
-  digitalWrite(BUZZER_PIN, HIGH); // Buzzer OFF
+  digitalWrite(BUZZER_PIN, HIGH); 
   relayOff(RELAY_CH1_PIN);
   relayOff(RELAY_CH2_PIN);
   digitalWrite(LED_PASS_PIN, HIGH);
@@ -203,7 +203,6 @@ void loop() {
     processCommand(cmd);
   }
 
-  // AUTO-RESET AFTER 3 SECONDS BACK TO INITIAL STATE!
   if (isRejected && (millis() - rejectStartTime > REJECT_HOLD_MS)) {
     resetToInitialState();
   }

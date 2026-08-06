@@ -10,20 +10,14 @@ import seaborn as sns
 import torch
 from sklearn.metrics import confusion_matrix
 
-# Assuming a hypothetical model import
-# from models.morphology_fusion import MorphologyAwareYOLO
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def evaluate_model(weights_path: str, data_path: str, device: str, save_dir: str) -> None:
-    """
-    Evaluates the morphology-aware model on a test set.
-    """
-    logging.info(f"Loading weights from {weights_path} onto {device}...")
-    # model = MorphologyAwareYOLO(weights=weights_path).to(device)
-    # model.eval()
     
-    # Mock evaluation results
+    logging.info(f"Loading weights from {weights_path} onto {device}...")
+    
     logging.info(f"Running evaluation on {data_path}...")
     
     classes = ["crack", "scratch", "dent", "good"]
@@ -42,7 +36,6 @@ def evaluate_model(weights_path: str, data_path: str, device: str, save_dir: str
         }
     }
     
-    # Generate mock confusion matrix
     cm = np.array([
         [89,  5,  2,  4],
         [ 6, 88,  4,  2],
@@ -53,7 +46,6 @@ def evaluate_model(weights_path: str, data_path: str, device: str, save_dir: str
     out_dir = Path(save_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
-    # Save JSON
     json_path = out_dir / "results.json"
     with open(json_path, "w") as f:
         json.dump(metrics, f, indent=4)

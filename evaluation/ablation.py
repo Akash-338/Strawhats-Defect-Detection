@@ -18,7 +18,6 @@ def generate_ablation_study(save_dir: str):
     mAP_50 = [0.82, 0.85, 0.87, 0.89, 0.91]
     mAP_50_95 = [0.55, 0.61, 0.65, 0.68, 0.72]
     
-    # Markdown Table
     md_path = out_dir / "ablation_table.md"
     with open(md_path, "w") as f:
         f.write("# Ablation Study\n\n")
@@ -27,7 +26,6 @@ def generate_ablation_study(save_dir: str):
         for m, a1, a2 in zip(models, mAP_50, mAP_50_95):
             f.write(f"| {m} | {a1:.3f} | {a2:.3f} |\n")
             
-    # Plot
     plt.figure(figsize=(10, 6))
     x = range(len(models))
     width = 0.35

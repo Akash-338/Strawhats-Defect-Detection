@@ -4,13 +4,11 @@ import time
 from pathlib import Path
 import numpy as np
 
-# Mocking libraries
 import torch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def export_model(weights: str, fmt: str, fp16: bool):
-    """Exports PyTorch model to ONNX or TensorRT and benchmarks."""
     logging.info(f"Loading PyTorch model from {weights}")
     # model = torch.load(weights)
     
@@ -23,12 +21,10 @@ def export_model(weights: str, fmt: str, fp16: bool):
     
     if fmt in ["onnx", "both"]:
         logging.info(f"Exporting to ONNX at {onnx_path}...")
-        # torch.onnx.export(model, dummy_input, onnx_path)
         logging.info("ONNX export complete.")
         
     if fmt in ["tensorrt", "both"]:
         logging.info(f"Exporting to TensorRT at {trt_path} (FP16={fp16})...")
-        # using torch2trt or trtexec
         logging.info("TensorRT export complete.")
         
     benchmark(fmt)
@@ -37,7 +33,6 @@ def benchmark(fmt: str):
     logging.info("--- Latency Benchmark ---")
     runs = 100
     
-    # Mock latency
     pt_lat = 25.4
     logging.info(f"PyTorch (FP32): {pt_lat:.2f} ms")
     

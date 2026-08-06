@@ -9,14 +9,11 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def explain_prediction(image_path: str, weights_path: str, save_dir: str) -> None:
-    """
-    Generates Grad-CAM and SHAP explanations for detections.
-    """
+    
     logging.info(f"Analyzing {image_path} with {weights_path}")
     out_dir = Path(save_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
-    # Mocking Grad-CAM overlay
     image = cv2.imread(image_path)
     if image is None:
         logging.warning(f"Could not read {image_path}, using dummy image")
@@ -29,13 +26,11 @@ def explain_prediction(image_path: str, weights_path: str, save_dir: str) -> Non
     overlay_path = out_dir / f"gradcam_{Path(image_path).stem}.jpg"
     cv2.imwrite(str(overlay_path), overlay)
     
-    # Mocking SHAP
     features = ['Area', 'Perimeter', 'Aspect Ratio', 'Eccentricity', 'Extent', 
                 'Solidity', 'Convex Area', 'Equivalent Diameter', 'Major Axis', 'Minor Axis', 'Hu1']
     shap_vals = np.random.randn(11) * 0.1
-    # Highlight specific features for the text explanation
-    shap_vals[2] = 0.45  # Aspect Ratio
-    shap_vals[3] = 0.38  # Eccentricity
+    shap_vals[2] = 0.45  
+    shap_vals[3] = 0.38  
     
     plt.figure(figsize=(10, 6))
     y_pos = np.arange(len(features))

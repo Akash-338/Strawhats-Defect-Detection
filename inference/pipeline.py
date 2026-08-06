@@ -1,9 +1,4 @@
-"""
-inference/pipeline.py
-===================
-RVCE Hackathon 2026 — Team Strawhat-Pirates
-Integrated Inference Pipeline using MaterialRouter, Steel YOLO, and Wood YOLO Detectors.
-"""
+
 
 import os
 import torch
@@ -26,7 +21,6 @@ class InferencePipeline:
         self.wood_yolo = None
         self.router = None
         
-        # Load Steel YOLO
         steel_weights = ROOT / 'runs' / 'detect' / 'runs' / 'steel' / 'weights' / 'best.pt'
         if not steel_weights.exists():
             steel_weights = ROOT / 'runs' / 'detect' / 'steel' / 'weights' / 'best.pt'
@@ -38,7 +32,6 @@ class InferencePipeline:
         else:
             print(f"⚠️ Steel weights not found at {steel_weights}")
 
-        # Load Wood YOLO
         wood_weights = ROOT / 'runs' / 'detect' / 'runs' / 'wood' / 'weights' / 'best.pt'
         if not wood_weights.exists():
             wood_weights = ROOT / 'runs' / 'detect' / 'wood' / 'weights' / 'best.pt'
@@ -50,7 +43,6 @@ class InferencePipeline:
         else:
             print(f"⚠️ Wood weights not found at {wood_weights}")
 
-        # Load Material Router
         classifier_path = ROOT / 'runs' / 'classifier' / 'best_material_classifier.pth'
         if classifier_path.exists():
             try:
@@ -72,7 +64,6 @@ class InferencePipeline:
         material = "steel"
         material_conf = 0.98
         
-        # Predict material if MaterialRouter is available
         if self.router is not None:
             try:
                 mat_pred, mat_c = self.router.classify_material(frame)
@@ -81,12 +72,10 @@ class InferencePipeline:
             except Exception:
                 material = "steel"
         
-        # Select active detector based on material
         active_yolo = self.wood_yolo if (material == 'wood' and self.wood_yolo is not None) else self.steel_yolo
         if active_yolo is None:
             active_yolo = self.steel_yolo or self.wood_yolo
 
-        # Run YOLO detection directly on sharp raw frame for max defect sensitivity
         results = active_yolo(frame, conf=conf_threshold, verbose=False)[0]
         
         detections = []
@@ -100,20 +89,16 @@ class InferencePipeline:
                 cls_id = int(box.cls[0].item())
                 conf = float(box.conf[0].item())
                 
-                # Class name
                 raw_name = results.names[cls_id] if cls_id in results.names else f"defect_{cls_id}"
                 
-                # Get bounding box coordinates
                 x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
                 
-                # Draw Box with bright red stroke & label
                 box_color = (80, 80, 240) # Red for defect
                 cv2.rectangle(annotated, (x1, y1), (x2, y2), box_color, 3)
                 
                 label_text = f"{raw_name.upper()} {conf*100:.0f}%"
                 (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
                 
-                # Draw label (inside box if near top edge, above box otherwise)
                 if y1 < 45:
                     lbl_bg_top = y1
                     lbl_bg_bot = y1 + th + 8
@@ -133,7 +118,6 @@ class InferencePipeline:
                 })
                 defect_count += 1
 
-        # ── Morphological Scratch & Anomaly Detectors (fallback for defects YOLO misses) ──
         scratch_dets = self._detect_scratches(frame, annotated)
         for sd in scratch_dets:
             detections.append(sd)
@@ -149,7 +133,6 @@ class InferencePipeline:
         top_conf = max([d["conf"] for d in detections], default=0.0) if detections else 0.0
         top_class = max(detections, key=lambda d: d["conf"])["class"] if detections else None
         
-        # Calculate extracted morphology descriptors for XAI display panel
         morphology = None
         if defect_count > 0:
             morphology = {
@@ -181,12 +164,10 @@ class InferencePipeline:
             h, w = frame.shape[:2]
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame.copy()
             
-            # Contrast enhancement
             clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8, 8))
             enhanced = clahe.apply(gray)
             blurred = cv2.GaussianBlur(enhanced, (5, 5), 1.0)
             
-            # Adaptive threshold for dark defect blobs
             thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                            cv2.THRESH_BINARY_INV, 19, 7)
             
@@ -220,7 +201,6 @@ class InferencePipeline:
                         "bbox": [x, y, x + bw, y + bh]
                     })
                     
-                    # Draw on annotated frame
                     color = (0, 0, 255)
                     cv2.rectangle(annotated, (x, y), (x + bw, y + bh), color, 3)
                     label = f"{cls_name.upper()} {conf*100:.0f}%"
@@ -244,21 +224,16 @@ class InferencePipeline:
             h, w = frame.shape[:2]
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame.copy()
             
-            # Apply CLAHE for better contrast on faint scratches
             clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
             enhanced = clahe.apply(gray)
             
-            # Gaussian blur to reduce noise
             blurred = cv2.GaussianBlur(enhanced, (5, 5), 1.0)
             
-            # Canny edge detection with adaptive thresholds
             median_val = np.median(blurred)
             low_t = int(max(0, 0.5 * median_val))
             high_t = int(min(255, 1.3 * median_val))
             edges = cv2.Canny(blurred, low_t, high_t)
             
-            # Probabilistic Hough Line Transform
-            # minLineLength: lines must be at least 15% of image width to filter wood grain
             min_len = int(w * 0.15)
             lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=55,
                                     minLineLength=min_len, maxLineGap=15)
@@ -266,7 +241,6 @@ class InferencePipeline:
             if lines is None or len(lines) == 0:
                 return []
             
-            # Filter: keep only lines longer than threshold
             long_lines = []
             for line in lines:
                 pts = line[0] if (hasattr(line[0], '__len__') and len(line[0]) == 4) else line
@@ -280,7 +254,6 @@ class InferencePipeline:
             if not long_lines:
                 return []
             
-            # Group nearby lines into scratch clusters using simple spatial grouping
             raw_boxes = []
             used = [False] * len(long_lines)
             
@@ -302,7 +275,6 @@ class InferencePipeline:
                         used[j] = True
                         total_len += lb
                 
-                # Build bounding box from cluster
                 xs = [p[0] for p in cluster_pts]
                 ys = [p[1] for p in cluster_pts]
                 pad = 10
@@ -315,7 +287,6 @@ class InferencePipeline:
                 box_h = by2 - by1
                 aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
                 
-                # Scratches must be elongated (aspect >= 2.8)
                 if aspect >= 2.8 and total_len >= min_len * 1.2:
                     conf = min(0.85, 0.40 + (total_len / max(w, h)) * 0.6)
                     raw_boxes.append((bx1, by1, bx2, by2, conf))
@@ -323,7 +294,6 @@ class InferencePipeline:
             if not raw_boxes:
                 return []
                 
-            # Perform NMS / Box Merging to eliminate overlapping duplicate scratch boxes
             raw_boxes.sort(key=lambda b: b[4], reverse=True)
             merged_boxes = []
             
@@ -354,13 +324,12 @@ class InferencePipeline:
                 box_h = by2 - by1
                 aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
                 
-                # Check if this feature is actually a circular hole / pit instead of a linear scratch
                 if aspect < 2.0 and min(box_w, box_h) >= 15:
                     cls_lbl = "punching"
-                    color = (0, 0, 255) # Red for punching hole
+                    color = (0, 0, 255) 
                 else:
                     cls_lbl = "scratch"
-                    color = (0, 165, 255) # Orange for scratch
+                    color = (0, 165, 255)
                     
                 scratches.append({
                     "class": cls_lbl,
@@ -368,7 +337,6 @@ class InferencePipeline:
                     "bbox": [bx1, by1, bx2, by2]
                 })
                 
-                # Draw on annotated frame
                 cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 3)
                 label = f"{cls_lbl.upper()} {conf*100:.0f}%"
                 (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)

@@ -394,7 +394,7 @@ def draw_hud(frame: np.ndarray, material: str, mat_conf: float,
         cv2.putText(frame, state_text, (w//2 - stw//2, h//2 + 8),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.1, state_col, 2, cv2.LINE_AA)
 
-    return frame�──────────────────
+    return frame�──────────────────
     cv2.rectangle(frame, (0, h - 28), (w, h), (20, 20, 20), -1)
     controls = 'Q=Quit  S=Screenshot  P=Pause  SPACE=Freeze  +/-=Conf'
     cv2.putText(frame, controls, (8, h - 8),

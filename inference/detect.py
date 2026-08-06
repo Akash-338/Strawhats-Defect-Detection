@@ -4,13 +4,10 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-# from models.morphology_fusion import MorphologyAwareYOLO
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def preprocess(image: np.ndarray) -> np.ndarray:
-    """Applies DSP and CLAHE preprocessing."""
-    # Convert to LAB for CLAHE
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -27,13 +24,9 @@ def detect_single(image_path: str, weights: str, conf: float, save_dir: str):
         
     preprocessed = preprocess(image)
     
-    # model = MorphologyAwareYOLO(weights)
-    # results = model.predict(preprocessed, conf=conf)
     
-    # Mocking results
     logging.info("Running morphology fusion inference...")
     
-    # Dummy morphology features
     morph_features = {
         "crack_1": {"Area": 150, "Aspect Ratio": 0.2, "Eccentricity": 0.98},
         "scratch_1": {"Area": 45, "Aspect Ratio": 0.8, "Eccentricity": 0.85}

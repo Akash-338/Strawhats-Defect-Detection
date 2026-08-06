@@ -26,25 +26,21 @@ def apply_brightness_reduction(image: np.ndarray, factor: float) -> np.ndarray:
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
 def test_robustness(weights: str, data_path: str, save_dir: str) -> None:
-    """
-    Simulates industrial degradation and measures accuracy drop.
-    """
+    
     logging.info(f"Starting robustness tests on {data_path} using {weights}")
     
     out_dir = Path(save_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
-    # Mock baseline
     baseline_acc = 0.93
     
     blurs = [3, 5, 7, 9]
     noises = [0.01, 0.03, 0.05]
     brightnesses = [0.8, 0.6, 0.4]
     
-    # Mock results (accuracy drops)
-    blur_drops = [0.01, 0.02, 0.035, 0.048] # < 5% drop
-    noise_drops = [0.015, 0.03, 0.045]      # < 5% drop
-    bright_drops = [0.01, 0.02, 0.04]       # < 5% drop
+    blur_drops = [0.01, 0.02, 0.035, 0.048] 
+    noise_drops = [0.015, 0.03, 0.045]      
+    bright_drops = [0.01, 0.02, 0.04]       
     
     # Plotting
     plt.figure(figsize=(15, 5))

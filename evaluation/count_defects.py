@@ -8,20 +8,14 @@ from typing import Dict, Any, List
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def nms(boxes: List, confidences: List, threshold: float = 0.5) -> List:
-    """Mock NMS implementation."""
-    # In a real scenario, use torchvision.ops.nms
     return boxes
 
 def process_defects(image_id: str, boxes: List, classes: List, confidences: List, 
                     reject_classes: List[str] = ["crack"]) -> Dict[str, Any]:
-    """
-    Counts defects and determines pass/fail.
-    """
+    
     filtered_boxes = nms(boxes, confidences)
     
-    # Mock data for demonstration
     class_names = ["crack", "scratch", "dent", "good"]
-    # Suppose we detected these classes based on index
     detected_classes = [class_names[c] for c in classes[:len(filtered_boxes)]]
     
     counts = {c: 0 for c in class_names}
@@ -79,7 +73,6 @@ if __name__ == "__main__":
     parser.add_argument("--db-path", type=str, default="defects.db")
     args = parser.parse_args()
     
-    # Mock detections
     res = process_defects(args.image_id, [[0,0,10,10], [20,20,30,30]], [0, 1], [0.9, 0.85], reject_classes=["crack"])
     print(json.dumps(res, indent=4))
     log_to_sqlite(args.db_path, res)

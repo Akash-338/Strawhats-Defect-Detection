@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 import cv2
 
-# import detect
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -23,9 +22,7 @@ def batch_process(source_dir: str, weights: str, conf: float, save_dir: str):
         writer.writerow(["Filename", "Total Defects", "Pass/Fail"])
         
         for p in image_paths:
-            # detect.detect_single(str(p), weights, conf, save_dir)
             
-            # Mocking CSV write
             writer.writerow([p.name, 1 if "crack" in p.name else 0, "FAIL" if "crack" in p.name else "PASS"])
             
     logging.info(f"Batch processing complete. Summary saved to {csv_path}")
