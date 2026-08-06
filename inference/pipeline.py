@@ -205,8 +205,14 @@ class InferencePipeline:
                         continue
                     
                     aspect = max(bw, bh) / max(min(bw, bh), 1)
-                    conf = min(0.78, 0.40 + (area / (w * h)) * 5.0)
-                    cls_name = "surface_anomaly" if aspect < 2.5 else "defect_crack"
+                    conf = min(0.82, 0.45 + (area / (w * h)) * 5.0)
+                    
+                    if aspect < 2.0 and min(bw, bh) >= 12:
+                        cls_name = "punching"
+                    elif aspect >= 2.0:
+                        cls_name = "scratch"
+                    else:
+                        cls_name = "pitted_surface"
                     
                     anomalies.append({
                         "class": cls_name,
@@ -326,7 +332,6 @@ class InferencePipeline:
                 overlap = False
                 for m in merged_boxes:
                     mx1, my1, mx2, my2, _ = m
-                    # Calculate IoU
                     inter_x1 = max(x1, mx1)
                     inter_y1 = max(y1, my1)
                     inter_x2 = min(x2, mx2)
@@ -340,21 +345,32 @@ class InferencePipeline:
                         break
                 if not overlap:
                     merged_boxes.append(b)
-                    if len(merged_boxes) >= 4: # Cap at 4 clean scratch boxes max
+                    if len(merged_boxes) >= 4:
                         break
             
             scratches = []
             for (bx1, by1, bx2, by2, conf) in merged_boxes:
+                box_w = bx2 - bx1
+                box_h = by2 - by1
+                aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
+                
+                # Check if this feature is actually a circular hole / pit instead of a linear scratch
+                if aspect < 2.0 and min(box_w, box_h) >= 15:
+                    cls_lbl = "punching"
+                    color = (0, 0, 255) # Red for punching hole
+                else:
+                    cls_lbl = "scratch"
+                    color = (0, 165, 255) # Orange for scratch
+                    
                 scratches.append({
-                    "class": "scratch",
+                    "class": cls_lbl,
                     "conf": round(conf, 3),
                     "bbox": [bx1, by1, bx2, by2]
                 })
                 
                 # Draw on annotated frame
-                color = (0, 165, 255)  # Orange for scratch
                 cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 3)
-                label = f"SCRATCH {conf*100:.0f}%"
+                label = f"{cls_lbl.upper()} {conf*100:.0f}%"
                 (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
                 lbl_top = max(0, by1 - th - 8)
                 cv2.rectangle(annotated, (bx1, lbl_top), (bx1 + tw + 8, by1), color, -1)
