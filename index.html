@@ -109,7 +109,6 @@
       border: 1px solid rgba(74,222,128,.18);
     }
 
-    /* ── HITL Toggle & Human Review Card ────────────────────────── */
     .hitl-wrap {
       display: flex;
       align-items: center;
@@ -166,7 +165,7 @@
     .hc-btn.reject { background: #ef4444; color: #fff; }
     .hc-btn.reject:hover { background: #dc2626; transform: translateY(-1px); }
 
-    /* ── Main 2×2 Grid ───────────────────────────────────────── */
+  
     .grid {
       flex: 1;
       display: grid;
@@ -177,7 +176,7 @@
       min-height: 0;
     }
 
-    /* Every quadrant shares base style */
+
     .quad {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -189,7 +188,7 @@
     }
     .quad:hover { border-color: var(--border-hi); }
 
-    /* ── Quadrant label bar ──────────────────────────────────── */
+   
     .q-label {
       flex-shrink: 0;
       padding: 8px 14px;
@@ -225,7 +224,6 @@
     .q-badge.pass  { background: rgba(34,197,94,.12);   border-color: rgba(34,197,94,.3);   color: var(--pass); }
     .q-badge.fail  { background: rgba(239,68,68,.12);   border-color: rgba(239,68,68,.3);   color: var(--fail); }
 
-    /* ── Q1: Input image area ────────────────────────────────── */
     .q-media {
       flex: 1;
       display: flex;
@@ -252,7 +250,7 @@
     .q-placeholder .ph-icon { font-size: 2.8rem; }
     .q-placeholder p { font-size: .82rem; line-height: 1.6; max-width: 22ch; }
 
-    /* Scan animation overlay (visible during live demo) */
+   
     .scan-line {
       position: absolute;
       left: 0; right: 0; height: 2px;
@@ -270,10 +268,7 @@
       100% { top: 100%; opacity: 0; }
     }
 
-    /* ── Q2: Output image area ───────────────────────────────── */
-    /* same structure as Q1, reuses .q-media and .q-placeholder */
-
-    /* Corner info overlay on output */
+ 
     .output-overlays {
       position: absolute;
       inset: 0;
@@ -328,7 +323,7 @@
     }
     .conf-num { font-family: var(--mono); font-size: .72rem; color: var(--accent); width: 32px; text-align: right; }
 
-    /* ── Q3: Controls (Feed / Live) ──────────────────────────── */
+  
     .q-controls {
       flex: 1;
       display: flex;
@@ -366,13 +361,13 @@
     .ctrl-btn:hover::after { background: rgba(255,255,255,.07); }
     .ctrl-btn:active { transform: scale(.97); }
 
-    /* Feed Image button */
+   
     .btn-feed {
       background: linear-gradient(135deg, rgba(96,165,250,.25), rgba(59,130,246,.15));
       border: 1px solid rgba(96,165,250,.4);
       color: var(--steel);
     }
-    /* Live Demo button */
+   
     .btn-live {
       background: linear-gradient(135deg, rgba(74,222,128,.25), rgba(34,197,94,.15));
       border: 1px solid rgba(74,222,128,.4);
@@ -384,10 +379,9 @@
       color: var(--fail);
     }
 
-    /* Hidden file input */
     #file-input { display: none; }
 
-    /* Processing indicator */
+    
     .proc-indicator {
       font-size: .75rem;
       color: var(--muted);
@@ -404,7 +398,7 @@
     .spin.active { display: block; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Q4: Results panel ───────────────────────────────────── */
+ 
     .q-results {
       flex: 1;
       display: flex;
@@ -417,7 +411,7 @@
     .q-results::-webkit-scrollbar { width: 4px; }
     .q-results::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
 
-    /* Verdict big row */
+  
     .result-verdict {
       display: flex;
       align-items: center;
@@ -452,7 +446,7 @@
     .result-verdict.fail .verdict-label { color: var(--fail); }
     .verdict-detail { font-size: .75rem; color: var(--muted); margin-top: 3px; }
 
-    /* Count row */
+    
     .result-counts {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -470,7 +464,7 @@
     .count-value.defect { color: var(--warn); }
     .count-value.material { color: var(--steel); }
 
-    /* Defect class list */
+    
     .result-section-title {
       font-size: .7rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .1em;
@@ -512,7 +506,7 @@
     }
     .no-defect-msg .icon { font-size: 1.8rem; }
 
-    /* Idle state */
+    
     .idle-msg {
       display: flex; flex-direction: column; align-items: center;
       gap: 10px; padding: 30px 16px;
@@ -525,7 +519,7 @@
 <body>
 <div class="root">
 
-  <!-- ═══ HEADER ═══════════════════════════════════════════════════ -->
+  
   <header>
     <div class="logo">
       <div class="logo-icon">🔍</div>
@@ -545,10 +539,9 @@
     </div>
   </header>
 
-  <!-- ═══ 2×2 GRID ════════════════════════════════════════════════ -->
+
   <div class="grid">
 
-    <!-- ── Q1 : INPUT (top-left) ───────────────────────────────── -->
     <div class="quad" id="q-input">
       <div class="q-label">
         <span class="q-title">Input — Raw Image</span>
@@ -559,15 +552,15 @@
           <div class="ph-icon">📷</div>
           <p>Feed an image or start live demo using the controls below</p>
         </div>
-        <!-- Live webcam video -->
+       
         <video id="input-video" autoplay muted playsinline style="display:none;width:100%;height:100%;object-fit:contain;"></video>
-        <!-- Static uploaded image -->
+        
         <img id="input-img" alt="Input image" style="display:none;" />
       </div>
       <div class="scan-line" id="scan-line"></div>
     </div>
 
-    <!-- ── Q2 : OUTPUT (top-right) ────────────────────────────── -->
+    
     <div class="quad" id="q-output">
       <div class="q-label">
         <span class="q-title">Output — Detection Result</span>
@@ -578,10 +571,10 @@
           <div class="ph-icon">🤖</div>
           <p>Processed frame with bounding boxes will appear here</p>
         </div>
-        <!-- Annotated output image / MJPEG stream -->
+        
         <img id="output-img" alt="Detection output" style="display:none;" />
       </div>
-      <!-- Overlays on top of output image -->
+      
       <div class="output-overlays">
         <div class="ov-material" id="ov-material">🔩 STEEL</div>
         <div class="ov-verdict"  id="ov-verdict">PASS</div>
@@ -595,33 +588,33 @@
       </div>
     </div>
 
-    <!-- ── Q3 : CONTROLS (bottom-left) ───────────────────────── -->
+  
     <div class="quad" id="q-controls">
       <div class="q-label">
         <span class="q-title">Inspection Mode</span>
       </div>
       <div class="q-controls">
 
-        <!-- Feed Image -->
+        
         <input type="file" id="file-input" accept="image/*" />
         <button class="ctrl-btn btn-feed" id="btn-feed" onclick="triggerFileInput()">
           <span>📁</span>
           <span>Feed Image</span>
         </button>
 
-        <!-- Live Demo -->
+        
         <button class="ctrl-btn btn-live" id="btn-live" onclick="toggleLive()">
           <span>📡</span>
           <span id="live-btn-txt">Start Live Demo</span>
         </button>
 
-        <!-- Scan Now (visible only during Live Demo) -->
+        
         <button class="ctrl-btn btn-feed" id="btn-scan-now" onclick="scanNow()" style="display:none; background: linear-gradient(135deg, #00c853, #00e676);">
           <span>🔍</span>
           <span>Scan Now</span>
         </button>
 
-        <!-- Hardware Servo / LED Test Buttons -->
+        
         <div style="display:flex; gap:8px; width:100%; max-width:320px; margin-top:4px;">
           <button class="ctrl-btn" onclick="testHardware('REJECT')" style="flex:1; padding:8px 10px; font-size:0.75rem; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.35); color:var(--fail);">
             ⚡ Servo REJECT
@@ -631,7 +624,7 @@
           </button>
         </div>
 
-        <!-- Processing indicator -->
+        
         <div class="proc-indicator">
           <div class="spin" id="spinner"></div>
           <span id="proc-txt">Ready — choose a mode above</span>
@@ -640,20 +633,20 @@
       </div>
     </div>
 
-    <!-- ── Q4 : RESULTS (bottom-right) ───────────────────────── -->
+    
     <div class="quad" id="q-results">
       <div class="q-label">
         <span class="q-title">Detection Results</span>
       </div>
       <div class="q-results" id="results-body">
 
-        <!-- Idle placeholder -->
+        
         <div class="idle-msg" id="idle-msg">
           <div class="icon">📊</div>
           <p>Results will appear here after inspection</p>
         </div>
 
-        <!-- Verdict row (hidden until result) -->
+        
         <div class="result-verdict" id="result-verdict" style="display:none">
           <div class="verdict-circle" id="verdict-circle">⏳</div>
           <div class="verdict-info">
@@ -662,7 +655,7 @@
           </div>
         </div>
 
-        <!-- Counts (hidden until result) -->
+        
         <div class="result-counts" id="result-counts" style="display:none">
           <div class="count-card">
             <div class="count-label">Defects Found</div>
@@ -674,7 +667,7 @@
           </div>
         </div>
 
-        <!-- Human-in-the-Loop Review Card -->
+        <
         <div class="human-card" id="human-card" style="display:none">
           <div class="hc-header">
             <span>👤 HUMAN REVIEW REQUIRED</span>
@@ -687,7 +680,7 @@
           </div>
         </div>
 
-        <!-- Defect class list (hidden until result) -->
+       
         <div id="defect-section" style="display:none">
           <div class="result-section-title">Detected Classes</div>
           <div class="defect-list" id="defect-list"></div>
@@ -696,12 +689,10 @@
       </div>
     </div>
 
-  </div><!-- /grid -->
+  </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     JAVASCRIPT
-════════════════════════════════════════════════════════════════ -->
+
 <script>
 const API = 'http://127.0.0.1:8000';
 let liveMode   = false;
@@ -709,19 +700,19 @@ let liveStream = null;  // MediaStream for webcam
 let ws         = null;
 let frameCount = 0, fpsTimer = performance.now();
 
-/* ─── DOM references ────────────────────────────────────────── */
+
 const $ = id => document.getElementById(id);
 const E = {
   liveDot:      $('live-dot'),
   liveTxt:      $('live-txt'),
   fpTag:        $('fps-tag'),
-  // Q1 input
+  
   inputPlaceholder: $('input-placeholder'),
   inputVideo:   $('input-video'),
   inputImg:     $('input-img'),
   inputBadge:   $('input-badge'),
   scanLine:     $('scan-line'),
-  // Q2 output
+ 
   outputPlaceholder: $('output-placeholder'),
   outputImg:    $('output-img'),
   outputBadge:  $('output-badge'),
@@ -730,14 +721,14 @@ const E = {
   ovConf:       $('ov-conf'),
   confFill:     $('conf-fill'),
   confNum:      $('conf-num'),
-  // Q3 controls
+
   fileInput:    $('file-input'),
   btnFeed:      $('btn-feed'),
   btnLive:      $('btn-live'),
   liveBtnTxt:   $('live-btn-txt'),
   spinner:      $('spinner'),
   procTxt:      $('proc-txt'),
-  // Q4 results
+
   idleMsg:      $('idle-msg'),
   resultVerdict:$('result-verdict'),
   verdictCircle:$('verdict-circle'),
@@ -750,7 +741,7 @@ const E = {
   defectList:   $('defect-list'),
 };
 
-/* ─── File input ────────────────────────────────────────────── */
+
 function triggerFileInput() {
   if (liveMode) stopLive();
   E.fileInput.click();
@@ -762,7 +753,7 @@ E.fileInput.addEventListener('change', async e => {
   e.target.value = '';
 });
 
-/* ─── Image inference ───────────────────────────────────────── */
+
 async function runImageInference(file) {
   setStatus('processing');
 
@@ -770,7 +761,7 @@ async function runImageInference(file) {
   const url = URL.createObjectURL(file);
   showInput('image', url);
 
-  // Try real API first
+  
   let result = null;
   try {
     const fd = new FormData();
@@ -780,14 +771,14 @@ async function runImageInference(file) {
     if (res.ok) result = await res.json();
   } catch(_) {}
 
-  // Fallback: mock result for demo
+  
   if (!result) result = mockResult(file.name);
 
-  // Show annotated output
+  
   if (result.output_image_b64) {
     showOutput('image', 'data:image/jpeg;base64,' + result.output_image_b64);
   } else {
-    // Same image but with overlays drawn by JS (no backend annotation)
+  
     showOutput('image', url);
   }
 
@@ -795,11 +786,11 @@ async function runImageInference(file) {
   setStatus('idle');
 }
 
-/* ─── Live demo ─────────────────────────────────────────────── */
+
 async function toggleLive() {
   if (liveMode) { stopLive(); return; }
 
-  // Check if API server is running (uses backend camera stream, bypassing browser permission locks)
+
   const apiOnline = await checkAPI();
   if (apiOnline) {
     startAPILive();
@@ -819,13 +810,13 @@ function startAPILive() {
   liveMode = true;
   setStatus('live');
 
-  // Show live camera preview in Q1 (MJPEG from backend)
+
   showInput('mjpeg', `${API}/video_feed`);
 
-  // Connect WebSocket for stats
+
   connectWS();
 
-  // UI — show Scan Now button
+
   E.liveBtnTxt.textContent = 'Stop Live Demo';
   E.btnLive.classList.add('stop');
   document.getElementById('btn-scan-now').style.display = '';
@@ -836,25 +827,24 @@ async function startWebcamLive() {
   try {
     liveStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
   } catch(err) {
-    // If browser camera is blocked, fall back to backend MJPEG stream
     startAPILive();
     return;
   }
   liveMode = true;
   setStatus('live');
 
-  // Q1: raw webcam feed
+
   E.inputVideo.srcObject = liveStream;
   showInput('video');
 
-  // UI
+
   E.liveBtnTxt.textContent = 'Stop Live Demo';
   E.btnLive.classList.add('stop');
   document.getElementById('btn-scan-now').style.display = '';
   E.procTxt.textContent = 'Live preview — click Scan Now to analyze';
 }
 
-/* Single-scan: call backend /scan to capture + analyze current camera frame */
+
 async function scanNow() {
   if (!liveMode) return;
   const scanBtn = document.getElementById('btn-scan-now');
@@ -872,7 +862,7 @@ async function scanNow() {
     result = result || mockResult('live_scan');
   }
 
-  // Show annotated output in Q2
+
   if (result.output_image_b64) {
     showOutput('image', 'data:image/jpeg;base64,' + result.output_image_b64);
   }
@@ -927,13 +917,13 @@ function stopLive() {
   setStatus('idle');
 }
 
-/* ─── WebSocket (for API live mode) ────────────────────────── */
+
 function connectWS() {
   try {
     ws = new WebSocket(`ws://127.0.0.1:8000/ws/live`);
     ws.onmessage = evt => {
       const d = JSON.parse(evt.data);
-      // Only update FPS in Live Demo — detection results come from Scan Now click
+      
       if (d.stats?.fps) E.fpTag.textContent = d.stats.fps.toFixed(1) + ' FPS';
     };
     ws.onerror = () => {};
@@ -941,7 +931,7 @@ function connectWS() {
   } catch(_) {}
 }
 
-/* ─── Human-in-the-Loop (HITL) Mode ──────────────────────────── */
+
 let hitlMode = 'auto'; // 'auto' or 'manual'
 let pendingResult = null;
 
@@ -985,7 +975,7 @@ async function humanDecide(verdict) {
   }
 }
 
-/* ─── Render result into Q2 overlays + Q4 panel ────────────── */
+
 function renderResult(r) {
   pendingResult = r;
   if (hitlMode === 'manual') {
@@ -1011,38 +1001,36 @@ function renderResultCore(r) {
   const mat    = (r.material || '').toLowerCase();
   const conf   = r.confidence || 0;
 
-  // ── Q2 overlays ──
-  // Material badge
+
   if (mat) {
     E.ovMaterial.style.display = 'block';
     E.ovMaterial.className = 'ov-material ' + mat;
     E.ovMaterial.textContent = mat === 'steel' ? '🔩 STEEL' : (mat === 'aluminum' ? '⚙️ ALUMINUM' : '🪵 WOOD');
   }
-  // Verdict overlay
+ 
   if (r.verdict) {
     E.ovVerdict.style.display = 'block';
     E.ovVerdict.className = 'ov-verdict ' + (isPass ? 'pass' : isFail ? 'fail' : '');
     E.ovVerdict.textContent = isPass ? '✓ PASS' : '✗ REJECT';
   }
-  // Confidence bar
+
   E.ovConf.style.display = 'block';
   const pct = Math.round(conf * 100);
   E.confFill.style.width = pct + '%';
   E.confNum.textContent  = pct + '%';
 
-  // Q2 badge in label bar
+
   if (r.verdict) {
     E.outputBadge.style.display = 'inline-flex';
     E.outputBadge.className = 'q-badge ' + (isPass ? 'pass' : 'fail');
     E.outputBadge.textContent = isPass ? 'PASS' : 'REJECT';
   }
 
-  // ── Q4 results ──
+
   E.idleMsg.style.display = 'none';
   E.resultVerdict.style.display = 'flex';
   E.resultCounts.style.display = 'grid';
 
-  // Verdict card
   E.resultVerdict.className = 'result-verdict ' + (isPass ? 'pass' : isFail ? 'fail' : '');
   E.verdictCircle.textContent = isPass ? '✅' : isFail ? '❌' : '⏳';
   E.verdictLabel.textContent  = isPass ? 'PASS' : isFail ? 'REJECT' : '—';
@@ -1052,12 +1040,12 @@ function renderResultCore(r) {
     ? `${dets.length} defect${dets.length!==1?'s':''} detected — product rejected`
     : 'Awaiting result';
 
-  // Counts
+  
   E.cntDefects.textContent  = dets.length;
   E.cntMaterial.textContent = mat ? mat.toUpperCase() : '—';
   E.cntMaterial.style.color = mat === 'steel' ? 'var(--steel)' : mat === 'wood' ? 'var(--wood)' : 'var(--muted)';
 
-  // Defect class list
+  
   if (dets.length > 0) {
     E.defectSection.style.display = 'block';
     E.defectList.innerHTML = dets.map(d => {
@@ -1084,7 +1072,7 @@ function renderResultCore(r) {
   }
 }
 
-/* ─── Show helpers ──────────────────────────────────────────── */
+
 function showInput(type, src) {
   E.inputPlaceholder.style.display = 'none';
   E.inputVideo.style.display = 'none';
@@ -1098,7 +1086,7 @@ function showInput(type, src) {
     E.inputImg.src = src;
     E.inputImg.style.display = 'block';
   } else if (type === 'mjpeg') {
-    // Use <img> with MJPEG src
+    
     E.inputImg.src = src + '?t=' + Date.now();
     E.inputImg.style.display = 'block';
     E.scanLine.classList.add('active');
@@ -1122,7 +1110,7 @@ function hideOverlays() {
   E.outputBadge.style.display= 'none';
 }
 
-/* ─── Status helpers ────────────────────────────────────────── */
+
 function setStatus(s) {
   if (s === 'idle') {
     E.liveDot.className = 'live-dot';
@@ -1142,9 +1130,6 @@ function setStatus(s) {
   }
 }
 
-/* ─── Mock result (when backend unavailable) ────────────────── */
-// Steel: 10 validated classes (avg mAP@50 = 76.8%)
-// Removed: crazing(33.8%), inclusion(58.9%), rolled_in_scale(46.9%), rolled_pit(33.9%), crease(38.9%)
 const STEEL_CLS = ['patches','pitted_surface','scratches','punching',
   'weld_line','crescent_gap','water_spot','oil_spot','silk_spot','waist_folding'];
 const WOOD_CLS  = ['crack','knot','knot_with_crack','missing_knot',
@@ -1168,7 +1153,7 @@ function mockResult(fname) {
   };
 }
 
-/* ─── Draw mock boxes on canvas (webcam fallback) ───────────── */
+
 function drawMockBoxes(canvas, ctx, dets) {
   const w = canvas.width, h = canvas.height;
   ctx.strokeStyle = '#ef4444';

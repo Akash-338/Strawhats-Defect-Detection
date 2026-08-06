@@ -1,35 +1,10 @@
 import os
 import sys
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'  # Fix Anaconda + PyTorch OpenMP conflict on Windows
-
-# Fix Windows encoding for console output
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'  
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
-"""
-train_all.py
-============
-One-command overnight training pipeline for the Multi-Material Crack Inspection System.
-Runs all training stages sequentially -- just launch and go to sleep!
-
-Usage:
-    python train_all.py                    # Full pipeline (GPU)
-    python train_all.py --device cpu       # CPU mode (slow, for testing)
-    python train_all.py --skip-material    # Skip material classifier
-    python train_all.py --stages 1 2       # Run specific stages only
-    
-Stages:
-    1 - Material Classifier (ResNet18, 3 classes, ~15 min)
-    2 - Steel YOLO v2 (NEU-DET, 150 epochs, imgsz=800, mixup+copy_paste, ~8 hrs)
-    3 - Aluminum YOLO v2 (10 defect types, 150 epochs, imgsz=800, ~8 hrs)
-    4 - Wood YOLO v2 (10 defect types, 150 epochs, imgsz=800, ~6 hrs)
-    5 - Steel Morphology Fusion (cross-attention, 100 epochs, ~8 hrs)
-    6 - Aluminum Morphology Fusion (cross-attention, 100 epochs, ~8 hrs)
-    7 - Wood Morphology Fusion (cross-attention, 100 epochs, ~6 hrs)
-    
-Total estimated time: ~44 hours on RTX 4050 (6GB) — run overnight!
-"""
 
 import argparse
 import logging
@@ -38,7 +13,7 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
-# Setup logging with UTF-8 encoding to handle special characters on Windows
+
 log_handlers = [
     logging.StreamHandler(sys.stdout),
     logging.FileHandler('training_log.txt', mode='a', encoding='utf-8')
@@ -50,9 +25,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
+
 PROJECT_ROOT = Path(__file__).parent
 TRAINING_DIR = PROJECT_ROOT / "training"
 DATA_DIR = PROJECT_ROOT / "data"
@@ -172,7 +145,7 @@ def run_stage(stage_num: int, device: str) -> bool:
     
     start_time = time.time()
     
-    # Purge any stale Ultralytics .cache files before YOLO stages
+
     if stage_num in (2, 3, 4):
         if sys.platform == 'win32':
             os.system('del /f /q /s data\\*.cache >nul 2>&1')
@@ -182,10 +155,10 @@ def run_stage(stage_num: int, device: str) -> bool:
             except Exception:
                 pass
     
-    # Build command
+    
     cmd = [sys.executable, config["script"]] + config["args"]
     
-    # Add device arg if the script supports it
+
     if stage_num >= 2 and stage_num <= 4:
         cmd.extend(["--device", device])
     
@@ -195,7 +168,7 @@ def run_stage(stage_num: int, device: str) -> bool:
         result = subprocess.run(
             cmd,
             cwd=str(PROJECT_ROOT),
-            capture_output=False,  # Show output in real-time
+            capture_output=False,  
             text=True,
         )
         
@@ -236,7 +209,7 @@ Examples:
     
     print_banner()
     
-    # Determine which stages to run
+   
     if args.stages:
         stages = sorted(args.stages)
     else:
@@ -246,7 +219,7 @@ Examples:
         if args.skip_fusion:
             stages = [s for s in stages if s not in (5, 6, 7)]
     
-    # Pre-flight checks
+    
     logger.info("[PRE-FLIGHT] Checking GPU...")
     has_gpu = check_gpu()
     if args.device == "0" and not has_gpu:
@@ -261,7 +234,7 @@ Examples:
         logger.error("        See README.md for instructions.")
         sys.exit(1)
     
-    # Calculate total estimated time
+   
     total_est = sum(STAGE_CONFIG[s]["estimated_minutes"] for s in stages)
     est_finish = datetime.now() + timedelta(minutes=total_est)
     
@@ -273,7 +246,7 @@ Examples:
     logger.info("Starting training pipeline...")
     logger.info("")
     
-    # Run stages
+    
     overall_start = time.time()
     results = {}
     
@@ -287,7 +260,7 @@ Examples:
         
         logger.info("")
     
-    # Summary
+    
     total_elapsed = (time.time() - overall_start) / 60
     
     logger.info("=" * 60)
@@ -317,7 +290,7 @@ Examples:
     else:
         logger.error("Some stages failed. Check training_log.txt for details.")
     
-    # Save results summary
+    
     summary_path = PROJECT_ROOT / "training_results.txt"
     with open(summary_path, "w") as f:
         f.write(f"Training completed at: {datetime.now().isoformat()}\n")
