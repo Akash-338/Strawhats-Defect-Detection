@@ -64,7 +64,7 @@ class InferencePipeline:
             except Exception as e:
                 print(f"⚠️ Material Router optional fallback: {e}")
 
-    def predict(self, frame: np.ndarray, conf_threshold: float = 0.25) -> Dict[str, Any]:
+    def predict(self, frame: np.ndarray, conf_threshold: float = 0.10) -> Dict[str, Any]:
         """Runs material classification and defect detection on frame."""
         if self.steel_yolo is None and self.wood_yolo is None:
             raise RuntimeError("No YOLO models loaded.")
@@ -172,101 +172,109 @@ class InferencePipeline:
     def _detect_scratches(self, frame: np.ndarray, annotated: np.ndarray) -> List[Dict[str, Any]]:
         """Detect long linear scratches using Canny edges + Hough Line Transform.
         Returns list of detection dicts for scratches YOLO missed."""
-        h, w = frame.shape[:2]
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # Apply CLAHE for better contrast on faint scratches
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-        enhanced = clahe.apply(gray)
-        
-        # Gaussian blur to reduce noise
-        blurred = cv2.GaussianBlur(enhanced, (5, 5), 1.0)
-        
-        # Canny edge detection with tighter thresholds to avoid wood grain
-        median_val = np.median(blurred)
-        low_t = int(max(30, 0.66 * median_val))
-        high_t = int(min(255, 1.5 * median_val))
-        edges = cv2.Canny(blurred, low_t, high_t)
-        
-        # Probabilistic Hough Line Transform
-        # minLineLength: lines must be at least 15% of image width (skip short grain lines)
-        min_len = int(w * 0.15)
-        lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=60,
-                                minLineLength=min_len, maxLineGap=10)
-        
-        if lines is None or len(lines) == 0:
-            return []
-        
-        # Filter: keep only lines longer than threshold
-        long_lines = []
-        for line in lines:
-            x1l, y1l, x2l, y2l = line[0]
-            length = np.sqrt((x2l - x1l)**2 + (y2l - y1l)**2)
-            if length >= min_len:
-                long_lines.append((x1l, y1l, x2l, y2l, length))
-        
-        if not long_lines:
-            return []
-        
-        # Group nearby lines into scratch clusters using simple spatial grouping
-        scratches = []
-        used = [False] * len(long_lines)
-        
-        for i, (x1a, y1a, x2a, y2a, la) in enumerate(long_lines):
-            if used[i]:
-                continue
-            # Start a cluster with this line
-            cluster_pts = [(x1a, y1a), (x2a, y2a)]
-            used[i] = True
-            total_len = la
+        try:
+            h, w = frame.shape[:2]
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame.copy()
             
-            for j, (x1b, y1b, x2b, y2b, lb) in enumerate(long_lines):
-                if used[j]:
+            # Apply CLAHE for better contrast on faint scratches
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            enhanced = clahe.apply(gray)
+            
+            # Gaussian blur to reduce noise
+            blurred = cv2.GaussianBlur(enhanced, (5, 5), 1.0)
+            
+            # Canny edge detection with adaptive thresholds
+            median_val = np.median(blurred)
+            low_t = int(max(0, 0.5 * median_val))
+            high_t = int(min(255, 1.3 * median_val))
+            edges = cv2.Canny(blurred, low_t, high_t)
+            
+            # Probabilistic Hough Line Transform
+            # minLineLength: lines must be at least 8% of image width
+            min_len = int(w * 0.08)
+            lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=40,
+                                    minLineLength=min_len, maxLineGap=15)
+            
+            if lines is None or len(lines) == 0:
+                return []
+            
+            # Filter: keep only lines longer than threshold
+            long_lines = []
+            for line in lines:
+                pts = line[0] if (hasattr(line[0], '__len__') and len(line[0]) == 4) else line
+                if not hasattr(pts, '__len__') or len(pts) < 4:
                     continue
-                # Check if line j is close to any point in cluster
-                mid_a = ((x1a + x2a) // 2, (y1a + y2a) // 2)
-                mid_b = ((x1b + x2b) // 2, (y1b + y2b) // 2)
-                dist = np.sqrt((mid_a[0] - mid_b[0])**2 + (mid_a[1] - mid_b[1])**2)
-                if dist < min_len * 2:
-                    cluster_pts.extend([(x1b, y1b), (x2b, y2b)])
-                    used[j] = True
-                    total_len += lb
+                x1l, y1l, x2l, y2l = map(int, pts[:4])
+                length = float(np.sqrt((x2l - x1l)**2 + (y2l - y1l)**2))
+                if length >= min_len:
+                    long_lines.append((x1l, y1l, x2l, y2l, length))
             
-            # Build bounding box from cluster
-            xs = [p[0] for p in cluster_pts]
-            ys = [p[1] for p in cluster_pts]
-            pad = 12
-            bx1 = max(0, min(xs) - pad)
-            by1 = max(0, min(ys) - pad)
-            bx2 = min(w, max(xs) + pad)
-            by2 = min(h, max(ys) + pad)
+            if not long_lines:
+                return []
             
-            box_w = bx2 - bx1
-            box_h = by2 - by1
-            aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
+            # Group nearby lines into scratch clusters using simple spatial grouping
+            scratches = []
+            used = [False] * len(long_lines)
             
-            # Scratches are elongated (aspect > 4) and cover meaningful area
-            if aspect >= 4.0 and total_len >= min_len * 2.0:
-                # Confidence based on line length relative to image
-                conf = min(0.80, 0.35 + (total_len / max(w, h)) * 0.6)
-                scratches.append({
-                    "class": "scratch",
-                    "conf": round(conf, 3),
-                    "bbox": [bx1, by1, bx2, by2]
-                })
+            for i, (x1a, y1a, x2a, y2a, la) in enumerate(long_lines):
+                if used[i]:
+                    continue
+                # Start a cluster with this line
+                cluster_pts = [(x1a, y1a), (x2a, y2a)]
+                used[i] = True
+                total_len = la
                 
-                # Draw on annotated frame
-                color = (0, 165, 255)  # Orange for scratch
-                cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 3)
-                label = f"SCRATCH {conf*100:.0f}%"
-                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
-                lbl_top = max(0, by1 - th - 8)
-                cv2.rectangle(annotated, (bx1, lbl_top), (bx1 + tw + 8, by1), color, -1)
-                cv2.putText(annotated, label, (bx1 + 4, by1 - 4),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
-        
+                for j, (x1b, y1b, x2b, y2b, lb) in enumerate(long_lines):
+                    if used[j]:
+                        continue
+                    # Check if line j is close to any point in cluster
+                    mid_a = ((x1a + x2a) // 2, (y1a + y2a) // 2)
+                    mid_b = ((x1b + x2b) // 2, (y1b + y2b) // 2)
+                    dist = np.sqrt((mid_a[0] - mid_b[0])**2 + (mid_a[1] - mid_b[1])**2)
+                    if dist < min_len * 2:
+                        cluster_pts.extend([(x1b, y1b), (x2b, y2b)])
+                        used[j] = True
+                        total_len += lb
+                
+                # Build bounding box from cluster
+                xs = [p[0] for p in cluster_pts]
+                ys = [p[1] for p in cluster_pts]
+                pad = 12
+                bx1 = max(0, min(xs) - pad)
+                by1 = max(0, min(ys) - pad)
+                bx2 = min(w, max(xs) + pad)
+                by2 = min(h, max(ys) + pad)
+                
+                box_w = bx2 - bx1
+                box_h = by2 - by1
+                aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
+                
+                # Scratches are elongated (aspect > 2.5) and cover meaningful area
+                if aspect >= 2.5 and total_len >= min_len * 1.5:
+                    # Confidence based on line length relative to image
+                    conf = min(0.85, 0.3 + (total_len / max(w, h)) * 0.8)
+                    scratches.append({
+                        "class": "scratch",
+                        "conf": round(conf, 3),
+                        "bbox": [bx1, by1, bx2, by2]
+                    })
+                    
+                    # Draw on annotated frame
+                    color = (0, 165, 255)  # Orange for scratch
+                    cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 3)
+                    label = f"SCRATCH {conf*100:.0f}%"
+                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+                    lbl_top = max(0, by1 - th - 8)
+                    cv2.rectangle(annotated, (bx1, lbl_top), (bx1 + tw + 8, by1), color, -1)
+                    cv2.putText(annotated, label, (bx1 + 4, by1 - 4),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+            
+            return scratches
+        except Exception as e:
+            print(f"⚠️ Scratch detector warning: {e}")
+            return []  
         return scratches
 
-    def run(self, frame: np.ndarray, conf_threshold: float = 0.25) -> Dict[str, Any]:
+    def run(self, frame: np.ndarray, conf_threshold: float = 0.10) -> Dict[str, Any]:
         """Alias for predict method."""
         return self.predict(frame, conf_threshold=conf_threshold)

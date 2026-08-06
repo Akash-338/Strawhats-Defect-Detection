@@ -250,31 +250,16 @@ async def inference_loop():
             logger.info(f"Opening camera source: {idx}")
     
     if cap is None:
-        # Auto-scan: prefer port 1 (external USB camera) over port 0 (laptop webcam)
-        # Use DirectShow backend (CAP_DSHOW) — MSMF throws errors on USB cameras on Windows
-        for idx in [1, 2]:
-            c = cv2.VideoCapture(idx, cv2.CAP_DSHOW)
+        # Auto-scan: try index 1 (mobile cam / DroidCam) first, then 0
+        for idx in [1, 0, 2]:
+            c = cv2.VideoCapture(idx)
             if c.isOpened():
-                # Read a few warmup frames (USB cameras need this)
-                for _ in range(5):
-                    c.read()
                 r, f = c.read()
                 if r and f is not None:
                     cap = c
-                    logger.info(f"🎥 External camera on port {idx} via DirectShow ({f.shape[1]}x{f.shape[0]})")
+                    logger.info(f"🎥 Auto-detected active camera on port {idx} ({f.shape[1]}x{f.shape[0]})")
                     break
                 c.release()
-        
-        # Last resort: try port 0 (laptop webcam) with default backend
-        if cap is None:
-            c = cv2.VideoCapture(0)
-            if c.isOpened():
-                r, f = c.read()
-                if r and f is not None:
-                    cap = c
-                    logger.info(f"🎥 Fallback to laptop webcam on port 0 ({f.shape[1]}x{f.shape[0]})")
-                else:
-                    c.release()
 
     if cap is None or not cap.isOpened():
         logger.warning("⚠️ No active camera stream found — using colour-bar test pattern")

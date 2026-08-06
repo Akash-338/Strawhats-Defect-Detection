@@ -33,10 +33,9 @@ demo_samples/steel/
 demo_samples/wood/
 demo_samples/test_split/
 demo_samples/internet_test/
-demo_samples/
 datasets/coco8/labels/train
-demo_samples/clean_demo/
-datasets/coco8/labels/val/
+datasets/coco8/labels/val
+demo_samples/
 *.zip
 *.tar.gz
 *.7z
@@ -79,3 +78,7 @@ data.zip
 *.zip
 extracted_paper_text.txt
 FRIEND_SETUP.md
+
+*.jpg
+*.jpeg
+
