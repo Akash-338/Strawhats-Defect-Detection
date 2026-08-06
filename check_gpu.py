@@ -1,7 +1,6 @@
 import importlib, sys
 print('python', sys.version)
 
-# Check PyTorch
 try:
     ts = importlib.util.find_spec('torch')
     print('torch_installed', bool(ts))

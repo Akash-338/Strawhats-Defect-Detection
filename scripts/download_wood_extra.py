@@ -1,31 +1,3 @@
-"""
-download_wood_extra.py
-=======================
-Downloads the Surface Crack Detection dataset from Kaggle (~4,000 images)
-and converts it into YOLO bounding box format for the wood detector.
-
-Dataset: arunrk7/surface-crack-detection
-  - Positive/ (2,227 crack images)
-  - Negative/ (2,227 no-crack images — skipped)
-
-Since this is a classification dataset (no bounding boxes), we treat the
-ENTIRE image as the defect bounding box for Positive images:
-  → class 0 (defect) cx=0.5 cy=0.5 w=1.0 h=1.0
-
-This gives the YOLO model examples that teach:
-  "this whole image-type = cracked wood surface"
-
-Usage:
-    # Step 1: Install kaggle API (if not already)
-    pip install kaggle
-
-    # Step 2: Place kaggle.json in ~/.kaggle/kaggle.json
-    # (Download from: https://www.kaggle.com/settings → API → Create Token)
-
-    # Step 3: Run
-    python scripts/download_wood_extra.py           # dry run
-    python scripts/download_wood_extra.py --apply   # download + convert + merge
-"""
 
 import argparse
 import logging
@@ -49,7 +21,6 @@ RANDOM_SEED    = 42
 TRAIN_RATIO    = 0.70
 VAL_RATIO      = 0.15
 
-# YOLO label for a whole-image bounding box
 WHOLE_IMAGE_LABEL = "0 0.500000 0.500000 1.000000 1.000000"
 
 
@@ -94,7 +65,6 @@ def download_dataset() -> Path | None:
             logger.error("Download failed. Check your Kaggle API credentials.")
             return None
 
-    # Extract
     extract_dir = DOWNLOAD_DIR / "extracted"
     if extract_dir.exists():
         logger.info("Already extracted — skipping")
@@ -110,17 +80,14 @@ def find_positive_images(extract_dir: Path) -> list[Path]:
     """Find all crack (Positive) images in the extracted dataset."""
     positive_dir = None
 
-    # Common structures: Positive/, positive/, crack/, Surface Crack Detection/Positive/
     for candidate in extract_dir.rglob("*"):
         if candidate.is_dir() and candidate.name.lower() in {"positive", "crack", "cracked"}:
             positive_dir = candidate
             break
 
     if positive_dir is None:
-        # Fallback: list all subdirs and pick the larger one
         subdirs = [d for d in extract_dir.iterdir() if d.is_dir()]
         if len(subdirs) == 2:
-            # Binary dataset: take the one that's not 'negative'
             positive_dir = next(
                 (d for d in subdirs if "neg" not in d.name.lower()), subdirs[0]
             )

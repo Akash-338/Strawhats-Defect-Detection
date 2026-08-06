@@ -64,11 +64,11 @@ def process_aluminum(data_dir, output_dir):
             w = int(size.find('width').text)
             h = int(size.find('height').text)
             
-            # Find the corresponding image
+          
             image_name = xml_file.stem + '.jpg'
             image_path = None
             
-            # Match XML filenames to images in folders 1/ through 10/
+          
             for i in range(1, 11):
                 potential_img = data_dir / str(i) / image_name
                 if potential_img.exists():
@@ -76,7 +76,7 @@ def process_aluminum(data_dir, output_dir):
                     break
                     
             if not image_path:
-                # Also try .bmp just in case
+               
                 image_name_bmp = xml_file.stem + '.bmp'
                 for i in range(1, 11):
                     potential_img = data_dir / str(i) / image_name_bmp
@@ -94,7 +94,6 @@ def process_aluminum(data_dir, output_dir):
                 if int(difficult) == 1:
                     continue
                 
-                # class_id is the folder number - 1 (0-indexed for YOLO)
                 class_id = int(image_path.parent.name) - 1 
                 
                 xmlbox = obj.find('bndbox')

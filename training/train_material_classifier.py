@@ -49,7 +49,7 @@ def train_model(args):
     
     print(f"Classes: {class_names}")
     
-    # Model Setup
+    
     model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, num_classes)
@@ -110,7 +110,7 @@ def train_model(args):
                 
     print(f'Best val Acc: {best_acc:4f}')
     
-    # Test phase
+
     model.load_state_dict(torch.load(save_dir / 'best_material_classifier.pth', map_location=device))
     model.eval()
     

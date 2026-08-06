@@ -1,8 +1,4 @@
-"""
-convert_annotations.py
-Parses VOC XML annotations from NEU-DET, converts to YOLO format,
-and copies images and labels to a processed directory.
-"""
+
 
 import argparse
 import logging
@@ -26,7 +22,6 @@ CLASS_MAPPING = {
 }
 
 def convert_voc_to_yolo(xml_path: Path, output_label_path: Path) -> bool:
-    """Parse VOC XML and write YOLO format txt file."""
     try:
         tree = ET.parse(xml_path)
         root = tree.getroot()
@@ -85,13 +80,7 @@ def find_image(images_dir: Path, stem: str) -> Path | None:
     return None
 
 def process_annotations(data_dir: Path, output_dir: Path) -> None:
-    """Convert annotations and copy images.
     
-    Handles the actual NEU-DET Kaggle structure:
-      data/NEU-DET/NEU-DET/{train,validation}/annotations/*.xml
-      data/NEU-DET/NEU-DET/{train,validation}/images/{classname}/*.bmp
-    """
-    # Try nested structure first (Kaggle download)
     nested = data_dir / "NEU-DET"
     if nested.exists():
         data_dir = nested
@@ -106,7 +95,6 @@ def process_annotations(data_dir: Path, output_dir: Path) -> None:
     for split in ["train", "validation"]:
         split_dir = data_dir / split
         if not split_dir.exists():
-            # Fallback: try IMAGES/ANNOTATIONS flat structure
             images_dir = data_dir / "IMAGES"
             annotations_dir = data_dir / "ANNOTATIONS"
             if images_dir.exists() and annotations_dir.exists():

@@ -1,37 +1,21 @@
-# -*- coding: utf-8 -*-
-"""
-build_print_cards.py  --  Team SafePath | RVCE Hackathon 2026
-=============================================================
-Picks the sharpest sample image per defect class from each material
-dataset and builds demo/print_cards/ with labeled JPEGs + a
-print-ready HTML sheet.
 
-Strategy per material:
-  Steel  -- filename prefix (crazing_*, rolled-in_scale_*, ...)
-  Aluminum/Wood -- label-file lookup (images have hash/serial names;
-                   we read the .txt label to find which class each image is)
-
-Usage:
-    python tools/build_print_cards.py
-"""
 
 import os, sys, shutil, cv2, yaml, random
 import numpy as np
 from pathlib import Path
 
-# ── Output ────────────────────────────────────────────────────────────────────
 OUT_DIR = Path("demo/print_cards")
 CARD_W, CARD_H = 420, 420
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-# ── Material configs ──────────────────────────────────────────────────────────
+
 MATERIALS = {
     "Steel": {
-        "strategy":  "prefix",       # match by filename prefix
+        "strategy":  "prefix",       
         "img_dir":   "data/processed/steel_unified/train/images",
-        "color":     (200, 100, 30), # BGR blue-ish
+        "color":     (200, 100, 30), 
         "classes": {
-            # display_name : filename_prefix
+            
             "Crazing":          "crazing",
             "Inclusion":        "inclusion",
             "Patches":          "patches",
@@ -41,23 +25,22 @@ MATERIALS = {
         },
     },
     "Aluminum": {
-        "strategy":  "label",        # match by reading .txt label files
+        "strategy":  "label",        
         "img_dir":   "data/processed_aluminum/images/train",
         "lbl_dir":   "data/processed_aluminum/labels/train",
         "yaml":      "data/dataset_aluminum.yaml",
-        "color":     (30, 180, 30),  # BGR green
+        "color":     (30, 180, 30),  
     },
     "Wood": {
         "strategy":  "label",
         "img_dir":   "data/processed/wood_10class/train/images",
         "lbl_dir":   "data/processed/wood_10class/train/labels",
         "yaml":      "data/dataset_wood_10class.yaml",
-        "color":     (30, 90, 160),  # BGR brown
+        "color":     (30, 90, 160),  
     },
 }
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def sharpness(img_path: Path) -> float:
     """Laplacian variance = higher means sharper."""
@@ -70,7 +53,7 @@ def sharpness(img_path: Path) -> float:
 def best_by_prefix(img_dir: Path, prefix: str, top_n: int = 8) -> Path | None:
     """Pick sharpest image whose stem starts with prefix (no _aug preferred)."""
     p = prefix.lower()
-    # prefer originals (no _aug)
+    
     cands = [f for f in img_dir.rglob("*.jpg")
              if f.stem.lower().startswith(p) and "_aug" not in f.stem.lower()]
     if not cands:
@@ -98,7 +81,7 @@ def build_label_index(img_dir: Path, lbl_dir: Path, class_names: list[str]) -> d
                 break
         else:
             continue
-        # read class ids
+        
         try:
             lines = lbl_file.read_text().strip().splitlines()
         except Exception:
@@ -113,7 +96,7 @@ def build_label_index(img_dir: Path, lbl_dir: Path, class_names: list[str]) -> d
                     pass
         if not ids:
             continue
-        # dominant class
+        
         dom = max(set(ids), key=ids.count)
         if 0 <= dom < len(class_names):
             index[class_names[dom]].append(img_path)
@@ -123,7 +106,7 @@ def build_label_index(img_dir: Path, lbl_dir: Path, class_names: list[str]) -> d
 def best_from_pool(pool: list[Path], top_n: int = 8) -> Path | None:
     if not pool:
         return None
-    # prefer no _aug, larger file
+   
     orig = [p for p in pool if "_aug" not in p.stem and ".rf." not in p.stem]
     source = orig if orig else pool
     source.sort(key=lambda p: p.stat().st_size, reverse=True)
@@ -139,30 +122,30 @@ def make_card(src: Path, display_name: str, material: str, color: tuple) -> np.n
         img = np.zeros((CARD_H, CARD_W, 3), dtype=np.uint8)
     img = cv2.resize(img, (CARD_W, CARD_H), interpolation=cv2.INTER_LANCZOS4)
 
-    # Bottom banner
+    
     banner_h = 72
     overlay = img.copy()
     cv2.rectangle(overlay, (0, CARD_H - banner_h), (CARD_W, CARD_H), (18, 18, 18), -1)
     img = cv2.addWeighted(overlay, 0.80, img, 0.20, 0)
 
-    # Top accent bar (material color)
+    
     cv2.rectangle(img, (0, 0), (CARD_W, 7), color, -1)
 
-    # Class label
+    
     fs, thick = 0.78, 2
     (tw, _), _ = cv2.getTextSize(display_name, FONT, fs, thick)
     tx = (CARD_W - tw) // 2
     cv2.putText(img, display_name, (tx, CARD_H - banner_h + 28),
                 FONT, fs, color, thick, cv2.LINE_AA)
 
-    # Material sub-label
+    
     sub = "Material: " + material
     fs2 = 0.45
     (tw2, _), _ = cv2.getTextSize(sub, FONT, fs2, 1)
     cv2.putText(img, sub, ((CARD_W - tw2)//2, CARD_H - banner_h + 56),
                 FONT, fs2, (190, 190, 190), 1, cv2.LINE_AA)
 
-    # Team watermark top-right
+    
     wm = "SafePath | RVCE 2026"
     (wmw, _), _ = cv2.getTextSize(wm, FONT, 0.32, 1)
     cv2.putText(img, wm, (CARD_W - wmw - 6, 22), FONT, 0.32, (220, 220, 220), 1, cv2.LINE_AA)
@@ -223,7 +206,6 @@ def build_html(cards: list[dict]) -> str:
 </html>"""
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     print("=" * 62)
     print("  Building Demo Print Cards -- Team SafePath | RVCE 2026")
@@ -246,7 +228,7 @@ def main():
             print(f"  WARNING: {img_dir} not found, skipping.")
             continue
 
-        # ── Prefix strategy (Steel) ──────────────────────────────────────────
+       
         if strategy == "prefix":
             for display_name, prefix in cfg["classes"].items():
                 src = best_by_prefix(img_dir, prefix)
@@ -257,7 +239,7 @@ def main():
                 _save_card(src, display_name, material, color, mat_dir, all_cards)
                 print(f"  OK  {display_name:22s}  <- {src.name}")
 
-        # ── Label strategy (Aluminum, Wood) ──────────────────────────────────
+        
         elif strategy == "label":
             lbl_dir = Path(cfg["lbl_dir"])
             with open(cfg["yaml"], encoding="utf-8") as f:
@@ -280,7 +262,7 @@ def main():
                 _save_card(src, display, material, color, mat_dir, all_cards)
                 print(f"  OK  {display:22s}  <- {src.name}")
 
-    # Write HTML
+    
     html_path = OUT_DIR / "print_sheet.html"
     html_path.write_text(build_html(all_cards), encoding="utf-8")
 

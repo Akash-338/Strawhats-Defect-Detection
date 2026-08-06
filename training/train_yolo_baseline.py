@@ -19,7 +19,7 @@ def main(args):
     lr = args.lr if args.lr else 0.005
     run_name = args.name if args.name else 'baseline'
     
-    # Auto-clean any stale Ultralytics dataset cache files (*.cache)
+   
     if sys.platform == 'win32':
         os.system('del /f /q /s data\\*.cache >nul 2>&1')
     for cache_file in Path("data").rglob("*.cache"):
@@ -31,7 +31,7 @@ def main(args):
 
     data_yaml_path = args.data if args.data else config['paths']['dataset_yaml']
 
-    # Dynamic resolution of absolute dataset root directory
+   
     yaml_abs = Path(data_yaml_path).resolve()
     yaml_name_lower = str(yaml_abs).lower()
     if (yaml_abs.parent / "train").exists():
@@ -56,7 +56,7 @@ def main(args):
     with open(data_yaml_path, 'w') as f:
         yaml.dump(ds_yaml, f, sort_keys=False)
 
-    # On Windows, workers > 0 causes multiprocessing overhead — use 0
+   
     num_workers = 0 if sys.platform == 'win32' else 4
 
     model.train(
@@ -71,7 +71,7 @@ def main(args):
         weight_decay=float(config['training']['weight_decay']),
         cos_lr=True,
         patience=30,
-        amp=True,          # FP16 mixed precision: ~1.5-2x faster, half VRAM usage
+        amp=True,         
         augment=True,
         mosaic=1.0,
         mixup=0.15,
@@ -86,7 +86,7 @@ def main(args):
         project='runs',
         name=run_name,
         workers=num_workers,
-        cache='ram',       # Load all images into RAM — critical for HDD users (3-4x faster per epoch)
+        cache='ram',      
         exist_ok=True
     )
 

@@ -33,7 +33,6 @@ def process_wood(data_dir, output_dir):
     print("Generating labels...")
     for img_path in tqdm(defect_images):
         try:
-            # OpenCV contour detection approach
             img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
             if img is None:
                 continue
@@ -47,18 +46,15 @@ def process_wood(data_dir, output_dir):
             
             yolo_labels = []
             if contours:
-                # Find largest contour as the defect
                 c = max(contours, key=cv2.contourArea)
                 x, y, bw, bh = cv2.boundingRect(c)
                 
-                # Convert to YOLO
                 cx = (x + bw/2) / w
                 cy = (y + bh/2) / h
                 nw = bw / w
                 nh = bh / h
                 yolo_labels.append(f"0 {cx:.6f} {cy:.6f} {nw:.6f} {nh:.6f}")
             else:
-                # Fallback to whole image
                 yolo_labels.append("0 0.5 0.5 1.0 1.0")
                 
             dataset.append((img_path, yolo_labels))
@@ -71,7 +67,7 @@ def process_wood(data_dir, output_dir):
     print(f"Found {len(clean_images)} clean images.")
     
     for img_path in clean_images:
-        dataset.append((img_path, [])) # Empty labels for negative samples
+        dataset.append((img_path, [])) 
         
     if len(dataset) == 0:
         print("No valid data found to split.")

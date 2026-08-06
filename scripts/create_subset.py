@@ -1,12 +1,3 @@
-"""
-create_subset.py
-Creates a stratified subset of a YOLO dataset by fraction.
-Used to speed up training of Aluminum and Wood stages.
-
-Usage:
-    python scripts/create_subset.py --src data/processed_aluminum \
-           --dst data/processed_aluminum_50pct --fraction 0.5
-"""
 
 import argparse
 import random
@@ -22,7 +13,6 @@ logger = logging.getLogger(__name__)
 def get_class_from_label(label_path: Path) -> int:
     """Return the first class id found in a YOLO label file."""
     try:
-        # Explicit utf-8 with errors='ignore' — prevents hanging on Windows
         content = label_path.read_text(encoding="utf-8", errors="ignore").strip()
         if not content:
             return -1
@@ -30,7 +20,6 @@ def get_class_from_label(label_path: Path) -> int:
         return int(first_line.split()[0])
     except Exception:
         try:
-            # Binary fallback for any encoding edge case
             raw = label_path.read_bytes().decode("latin-1", errors="ignore").strip()
             if raw:
                 return int(raw.splitlines()[0].split()[0])
@@ -44,7 +33,6 @@ def stratified_subset(image_dir: Path, label_dir: Path, fraction: float):
     Returns a stratified subset of (image, label) pairs by class.
     Fraction is applied per-class so rare classes are preserved.
     """
-    # Build class -> list of (img, lbl) pairs
     class_groups: dict[int, list] = defaultdict(list)
     unmatched = []
 
@@ -87,7 +75,6 @@ def copy_yaml(src_root: Path, dst_root: Path):
     """Copy and patch the dataset YAML to point at new path."""
     for yaml_file in src_root.glob("*.yaml"):
         content = yaml_file.read_text()
-        # Update path to new location
         content = content.replace(
             f"path: {src_root}",
             f"path: {dst_root}"
@@ -95,8 +82,7 @@ def copy_yaml(src_root: Path, dst_root: Path):
         out_yaml = dst_root / yaml_file.name
         out_yaml.write_text(content)
         logger.info(f"  Copied YAML → {out_yaml}")
-        break  # only first yaml
-
+        break  
 
 def main():
     parser = argparse.ArgumentParser(description="Create a stratified subset of a YOLO dataset")
@@ -118,8 +104,6 @@ def main():
     for split in args.splits:
         logger.info(f"\n[{split.upper()}]")
 
-        # Detect image/label directory structure
-        # Try train/images or images/train
         img_dir = src / split / "images"
         lbl_dir = src / split / "labels"
 
@@ -134,7 +118,6 @@ def main():
         if split == "train":
             pairs = stratified_subset(img_dir, lbl_dir, args.fraction)
         else:
-            # Keep val and test FULLY intact — don't reduce them
             logger.info(f"  Keeping {split} split intact (full data)")
             pairs = []
             for img_path in sorted(img_dir.glob("*")):
@@ -145,7 +128,6 @@ def main():
 
         copy_subset(pairs, src, dst, split)
 
-    # Copy val and test fully if not already done
     for split in ["val", "test"]:
         if split not in args.splits:
             for variant in [src / split, src / "images" / split]:
@@ -163,7 +145,6 @@ def main():
 
     copy_yaml(src, dst)
 
-    # Print summary
     total = sum(
         len(list((dst / s / "images").glob("*")))
         for s in ["train", "val", "test"]

@@ -8,16 +8,16 @@ model:
 
 training:
   optimizer: AdamW
-  learning_rate: 0.005     # YOLO baseline stages 2/3/4 (halved for batch=8)
-  fusion_lr: 0.0001        # Stage 5 morphology fusion AdamW (much lower for stability)
+  learning_rate: 0.005     
+  fusion_lr: 0.0001        
   lr_scheduler: CosineAnnealing
   batch_size: 4
   epochs_baseline: 150
   epochs_fusion: 50
   weight_decay: 0.0001
   image_size: 800
-  alpha: 0.5  # CCE loss weight
-  lambda_morph: 0.1  # morphology consistency weight
+  alpha: 0.5 
+  lambda_morph: 0.1  
   early_stopping_patience: 15
   
 dsp:

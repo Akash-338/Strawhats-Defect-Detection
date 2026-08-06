@@ -1,10 +1,10 @@
-# Byte-compiled / optimized / DLL files
+
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-# Environments
+
 .venv/
 venv/
 env/
@@ -12,14 +12,14 @@ ENV/
 env.bak/
 venv.bak/
 
-# PyTorch & Weights
+
 *.pth
 *.pt
 *.onnx
 *.engine
 *.tflite
 
-# Data directories (exclude heavy raw/processed assets, keep structures)
+
 data/NEU-DET/*
 !data/NEU-DET/.gitkeep
 data/Severstal/*
@@ -38,17 +38,16 @@ demo_samples/internet_test/
 *.7z
 *.csv
 
-# Runs & Outputs
 runs/
 *.log
 
-# IDE & Operating System
+
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 
-# Documents & logs (not code)
+
 *.xlsx
 *.docx
 *.pdf
@@ -58,7 +57,7 @@ implementation_plan.md
 paper_text.txt
 rules_text.txt
 
-# Dataset configs with absolute paths (regenerate locally)
+
 data/dataset_aluminum.yaml
 data/dataset_wood.yaml
 data/dataset_steel.yaml

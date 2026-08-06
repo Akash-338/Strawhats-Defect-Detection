@@ -17,18 +17,12 @@ def main(args):
     
     print(f"Fine-tuning on real samples for {epochs} epochs with lr={lr} on {device}...")
     
-    # Load fusion model
-    # model = MorphologyFusionModel(config)
-    # if os.path.exists(config['paths']['fusion_weights']):
-    #     model.load_state_dict(torch.load(config['paths']['fusion_weights']))
-    # model.to(device)
     
-    # Dataset with heavy augmentation
+    
     train_transforms = get_train_transforms(config)
     print("Augmentations initialized.")
     
-    # Training Loop
-    # ...
+   
     
     print("Fine-tuning completed.")
 

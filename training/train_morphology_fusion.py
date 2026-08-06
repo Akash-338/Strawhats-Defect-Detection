@@ -12,7 +12,7 @@ from pathlib import Path
 from tqdm import tqdm
 import glob
 
-# Add parent directory to path to allow importing from models/ and morphology/
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from training.losses import MorphologyAwareLoss
@@ -90,20 +90,20 @@ class MorphologyFusionDataset(Dataset):
     def __getitem__(self, idx):
         img_path = str(self.img_paths[idx])
         try:
-            # np.fromfile handles non-ASCII/Unicode paths on Windows
+            
             img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
         except Exception:
             img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
             
         if img is None:
-            # Fallback for missing/corrupt image: return blank image
+           
             img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
             
-        # Ensure 2D grayscale
+        
         if img.ndim == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             
-        # Resize image
+        
         h, w = img.shape[:2]
         img_resized = cv2.resize(img, (self.img_size, self.img_size))
         
@@ -149,12 +149,11 @@ def main(args):
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Handle bare integer device string (e.g. '0' → 'cuda:0')
+    
     dev_str = f'cuda:{args.device}' if args.device.isdigit() else args.device
     device = torch.device(dev_str if torch.cuda.is_available() else 'cpu')
     epochs = args.epochs if args.epochs else config['training']['epochs_fusion']
-    # Fusion always uses 640 — backbone is frozen so imgsz doesn't change accuracy
-    # but 800 would make the CPU morphology extraction very slow
+    
     img_size = 640
     batch_size = args.batch if args.batch else config['training'].get('batch_size', 4)
     
@@ -168,7 +167,7 @@ def main(args):
         }
         dataset_yaml = default_data.get(args.material, config['paths'].get('dataset_yaml', 'data/processed/steel_unified/dataset.yaml'))
     
-    # Determine weights with automatic fallback search
+   
     if args.material == 'steel':
         weights_path = config['paths']['steel_weights']
     elif args.material == 'aluminum':
@@ -179,7 +178,7 @@ def main(args):
         raise ValueError(f"Unknown material: {args.material}")
         
     if not os.path.exists(weights_path):
-        # Fallback candidates
+        
         candidates = [
             f"runs/{args.material}/weights/best.pt",
             f"runs/{args.material}/train/weights/best.pt",
@@ -195,7 +194,7 @@ def main(args):
                 found = True
                 break
         if not found:
-            # Search in runs/ for YOLO best.pt — exclude morphology_fusion checkpoints
+            
             matches = [
                 p for p in Path("runs").rglob(f"*{args.material}*/best.pt")
                 if 'morphology_fusion' not in str(p)
@@ -210,7 +209,7 @@ def main(args):
     print(f"Starting Morphology Fusion training for {epochs} epochs on {device}...")
     print(f"Using material: {args.material}, weights: {weights_path}, dataset: {dataset_yaml}")
 
-    # ── Resolve absolute dataset root (mirrors train_yolo_baseline.py logic) ──
+    
     yaml_abs = Path(dataset_yaml).resolve()
     yaml_name_lower = str(yaml_abs).lower()
     if (yaml_abs.parent / "train").exists():
@@ -241,17 +240,17 @@ def main(args):
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,  collate_fn=collate_fn, num_workers=0)
     val_loader   = DataLoader(val_dataset,   batch_size=batch_size, shuffle=False, collate_fn=collate_fn, num_workers=0)
     
-    # Initialize components
+    
     backbone = YOLOv10Backbone(weights_path).to(device)
     
-    # Freeze backbone
+    
     for param in backbone.parameters():
         param.requires_grad = False
     backbone.eval()
         
     num_classes = train_dataset.nc
     
-    # Dynamically determine visual_dim from backbone
+    
     with torch.no_grad():
         dummy_img = torch.zeros((1, 2, img_size, img_size), device=device)
         _ = backbone(dummy_img)
@@ -268,7 +267,7 @@ def main(args):
     
     feature_extractor = MorphologicalFeatureExtractor()
     
-    # Optimizers for fusion components only
+    
     trainable_params = list(morph_encoder.parameters()) + \
                        list(cross_attention.parameters()) + \
                        list(classifier.parameters())
@@ -308,8 +307,7 @@ def main(args):
                 if len(gt_boxes) == 0:
                     continue
                     
-                # Preprocess
-                # Using morphology pipeline
+                
                 dsp_img = DSPPreprocessor.full_dsp_pipeline(img_np)
                 dsp_img_uint8 = cv2.normalize(dsp_img, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
                 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -324,15 +322,14 @@ def main(args):
                 
                 input_tensor = torch.stack([img_tensor, attn_tensor], dim=0).unsqueeze(0).to(device)
                 
-                # Forward backbone
+                
                 with torch.no_grad():
                     _ = backbone(input_tensor)
                     
-                    # We will use ground-truth boxes to train the classification head
-                    # Extract visual features
+                   
                     f_visual = backbone.get_roi_features(gt_boxes, batch_idx=0)
                     
-                    # Pad/slice visual features if dimension mismatch
+                    
                     if f_visual.shape[-1] != visual_dim and f_visual.numel() > 0:
                         if f_visual.shape[-1] < visual_dim:
                             pad = torch.zeros(f_visual.shape[0], visual_dim - f_visual.shape[-1], device=device)
@@ -340,12 +337,11 @@ def main(args):
                         else:
                             f_visual = f_visual[:, :visual_dim]
                 
-                # Extract morph features from cropped regions
+               
                 raw_morph_features = []
                 for box in gt_boxes:
                     x1, y1, x2, y2 = box.cpu().numpy()
                     H, W = binary_mask.shape
-                    # crop
                     cx1, cy1 = int(x1*W), int(y1*H)
                     cx2, cy2 = int(x2*W), int(y2*H)
                     cx1 = max(0, cx1); cy1 = max(0, cy1)
@@ -366,21 +362,18 @@ def main(args):
                     
                 raw_morph_tensor = torch.stack(raw_morph_features).to(device)
                 
-                # Encode morph features
+                
                 f_morph = morph_encoder(raw_morph_tensor)
                 
-                # Fuse features
+                
                 fused = cross_attention(f_visual, f_morph)
                 
-                # Classify
+                
                 logits = classifier(fused)
                 
-                # L_morph: reconstruction consistency loss
-                # morph_preds = decode(f_morph) → reconstructed 11-dim descriptors
-                # morph_targets = raw_morph_tensor → original 11-dim descriptors
-                # MSE(reconstructed, original) gives a meaningful consistency signal
-                morph_preds = morph_encoder.decode(f_morph)   # (N, 11)
-                morph_targets = raw_morph_tensor              # (N, 11)
+              
+                morph_preds = morph_encoder.decode(f_morph)   
+                morph_targets = raw_morph_tensor             
                 
                 loss, loss_dict = criterion(morph_preds, morph_targets, logits, gt_classes, yolo_loss=0.0)
                 loss.backward()
@@ -395,7 +388,7 @@ def main(args):
         avg_loss = epoch_loss / len(train_loader)
         writer.add_scalar('Loss/train', avg_loss, epoch)
         
-        # Validation placeholder (can compute accuracy instead of mAP for simplicity, since it's a classification head)
+        
         morph_encoder.eval()
         cross_attention.eval()
         classifier.eval()

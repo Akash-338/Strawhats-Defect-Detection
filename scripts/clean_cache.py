@@ -1,8 +1,4 @@
-"""
-clean_cache.py
-==============
-Forcibly removes all Ultralytics labels.cache files from all processed dataset directories.
-"""
+
 
 import os
 import gc
@@ -13,7 +9,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
 def main():
-    gc.collect()  # Release any dangling file handles
+    gc.collect() 
     
     cache_files = list(DATA_DIR.rglob("*.cache")) + list(DATA_DIR.rglob("*.cache.npy"))
     print(f"Found {len(cache_files)} cache file(s) to remove.")
@@ -31,7 +27,7 @@ def main():
             
     print(f"\nSuccessfully removed {removed}/{len(cache_files)} cache files.")
     
-    # Also verify total image count in steel train
+    
     steel_train_img = DATA_DIR / "processed" / "steel" / "train" / "images"
     if steel_train_img.exists():
         imgs = list(steel_train_img.glob("*"))

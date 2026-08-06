@@ -1,12 +1,4 @@
-"""
-Download the 10-class Wood Surface Defect dataset and convert to YOLO format.
-Dataset: Large-scale wood surface defect dataset (Kodytek et al.)
-10 classes: live_knot, dead_knot, knot_with_crack, crack, resin,
-            marrow, quartzite, missing_knot, blue_stain, overgrown
 
-Usage:
-    python scripts/download_wood_10class.py
-"""
 
 import os
 import sys
@@ -16,21 +8,19 @@ import zipfile
 from pathlib import Path
 from tqdm import tqdm
 
-# ── Class mapping ─────────────────────────────────────────────────────────────
 WOOD_CLASSES = [
-    'live_knot',        # 0 - circular, high circularity
-    'dead_knot',        # 1 - dark circle, distinctive
-    'knot_with_crack',  # 2 - circle + linear crack
-    'crack',            # 3 - linear, high aspect ratio
-    'resin',            # 4 - blob, irregular
-    'marrow',           # 5 - linear, center strip
-    'quartzite',        # 6 - crystalline inclusion
-    'missing_knot',     # 7 - hole, high solidity gap
-    'blue_stain',       # 8 - large diffuse area
-    'overgrown',        # 9 - irregular growth
+    'live_knot',        
+    'dead_knot',        
+    'knot_with_crack',  
+    'crack',            
+    'resin',            
+    'marrow',          
+    'quartzite',        
+    'missing_knot',     
+    'blue_stain',      
+    'overgrown',        
 ]
 
-# Aliases for different naming conventions in the dataset
 WOOD_ALIASES = {
     'live knot': 'live_knot',
     'dead knot': 'dead_knot',
@@ -51,9 +41,8 @@ def download_wood_dataset(output_dir: Path):
     raw_dir = output_dir / 'raw' / 'wood_10class'
     raw_dir.mkdir(parents=True, exist_ok=True)
     
-    # Try multiple known Kaggle slugs for this dataset
     slugs = [
-        'muratkokludataset/wood-surface-defect-dataset',   # current binary dataset
+        'muratkokludataset/wood-surface-defect-dataset',   
         'kostastokis/wood-defect-dataset',
         'fantacher/wood-surface-defects',
     ]
@@ -62,7 +51,6 @@ def download_wood_dataset(output_dir: Path):
     print("   Try: kaggle datasets search 'wood defect 10 classes'")
     print()
     
-    # The best source is Roboflow Universe (YOLO format ready!)
     print("=" * 60)
     print("  RECOMMENDED: Download from Roboflow Universe")
     print("  (Already in YOLO format — no conversion needed!)")
@@ -221,7 +209,6 @@ def main():
     print("=" * 60)
     
     if args.convert:
-        # Convert existing download
         raw_dir = Path(args.convert)
         out_dir = project_root / 'data' / 'processed' / 'wood_10class'
         

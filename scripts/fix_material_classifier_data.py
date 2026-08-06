@@ -1,23 +1,3 @@
-"""
-fix_material_classifier_data.py
-================================
-Populates (or refreshes) the material_classifier dataset for all 3 classes
-by sampling from the full expanded processed datasets.
-
-Samples from:
-  data/processed/steel/train/images/    → material_classifier/*/steel/
-  data/processed_aluminum/images/train/ → material_classifier/*/aluminum/
-  data/processed_wood/images/train/     → material_classifier/*/wood/
-
-Old class folders are cleared before resampling so you always get fresh,
-diverse samples from the full expanded pool.
-
-Usage:
-    python scripts/fix_material_classifier_data.py          # dry run
-    python scripts/fix_material_classifier_data.py --apply  # write files
-    python scripts/fix_material_classifier_data.py --apply --train-count 500 --val-count 100
-"""
-
 import argparse
 import logging
 import random
@@ -37,8 +17,6 @@ SOURCES = {
 
 CLASSIFIER_DIR = PROJECT_ROOT / "data" / "material_classifier"
 
-# Default: 300 train / 75 val / 75 test per class = 450 total
-# (wood pool is now 15,366 so no reason to keep only 210)
 TRAIN_COUNT = 300
 VAL_COUNT   = 75
 TEST_COUNT  = 75
@@ -48,7 +26,6 @@ RANDOM_SEED = 42
 
 
 def sample_and_copy(material: str, source_dir: Path, dry_run: bool) -> bool:
-    """Sample TOTAL images from source_dir and distribute into train/val/test."""
     images = list(source_dir.glob("*.jpg")) + \
              list(source_dir.glob("*.jpeg")) + \
              list(source_dir.glob("*.png")) + \
@@ -63,7 +40,6 @@ def sample_and_copy(material: str, source_dir: Path, dry_run: bool) -> bool:
     rng = random.Random(RANDOM_SEED)
     rng.shuffle(images)
 
-    # If fewer than TOTAL images, take all and warn
     selected = images[:TOTAL]
     if len(selected) < TOTAL:
         logger.warning(f"  Only {len(selected)} images available for {material} (wanted {TOTAL})")
@@ -78,7 +54,6 @@ def sample_and_copy(material: str, source_dir: Path, dry_run: bool) -> bool:
         dest_dir = CLASSIFIER_DIR / split_name / material
 
         if not dry_run:
-            # Clear old samples first — ensures fresh diverse samples from expanded pool
             if dest_dir.exists():
                 shutil.rmtree(dest_dir)
             dest_dir.mkdir(parents=True, exist_ok=True)
@@ -93,7 +68,6 @@ def sample_and_copy(material: str, source_dir: Path, dry_run: bool) -> bool:
 
 
 def verify_current_state():
-    """Show current image counts per class per split."""
     logger.info("\nCurrent material_classifier state:")
     for split in ["train", "val", "test"]:
         for cls in ["steel", "aluminum", "wood"]:
@@ -117,7 +91,6 @@ def main():
                         help=f"Images per class for val (default: {VAL_COUNT})")
     args = parser.parse_args()
 
-    # ── Apply CLI overrides to module-level globals used by sample_and_copy ──
     TRAIN_COUNT = args.train_count
     VAL_COUNT   = args.val_count
     TEST_COUNT  = args.val_count   # keep test == val for symmetry

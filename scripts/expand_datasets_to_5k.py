@@ -1,10 +1,3 @@
-"""
-expand_datasets_to_5k.py
-Expands all 3 material datasets (Steel, Aluminum, Wood) to 5,000+ images each:
-- Steel: 4,091 → 5,200 images via offline augmentation
-- Aluminum: 2,336 → 5,500 images via offline augmentation
-- Wood: 3,509 → 5,200 images via Roboflow sampling
-"""
 
 import sys
 import shutil
@@ -63,7 +56,6 @@ def expand_dataset_split(img_dir: Path, lbl_dir: Path, target_count: int, prefix
     needed = target_count - current_count
     print(f"   Expanding {prefix} from {current_count} → {target_count} (+{needed} augmented images)...")
     
-    # Randomly pick images to augment
     random.seed(42)
     selected = random.choices(img_files, k=needed)
     
@@ -72,46 +64,37 @@ def expand_dataset_split(img_dir: Path, lbl_dir: Path, target_count: int, prefix
         lbl_path = lbl_dir / (img_path.stem + '.txt')
         lines = read_yolo_label(lbl_path)
         
-        # Read image
         img = cv2.imdecode(np.fromfile(str(img_path), dtype=np.uint8), cv2.IMREAD_COLOR)
         if img is None:
             continue
             
-        # Select augmentation type
         aug_type = idx % 4
         hflip = False
         vflip = False
         
         if aug_type == 0:
-            # Horizontal Flip
             img = cv2.flip(img, 1)
             hflip = True
         elif aug_type == 1:
-            # Vertical Flip
             img = cv2.flip(img, 0)
             vflip = True
         elif aug_type == 2:
-            # Both Flips
             img = cv2.flip(img, -1)
             hflip = True
             vflip = True
         elif aug_type == 3:
-            # Contrast Adjustment (CLAHE)
             lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
             l, a, b = cv2.split(lab)
             clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8,8))
             cl = clahe.apply(l)
             img = cv2.cvtColor(cv2.merge((cl, a, b)), cv2.COLOR_LAB2BGR)
             
-        # Output filenames
         new_stem = f"{img_path.stem}_aug{idx}"
         new_img_path = img_dir / f"{new_stem}{img_path.suffix}"
         new_lbl_path = lbl_dir / f"{new_stem}.txt"
         
-        # Save image
         cv2.imwrite(str(new_img_path), img)
         
-        # Transform & save label
         aug_lines = augment_bbox(lines, hflip=hflip, vflip=vflip)
         write_yolo_label(new_lbl_path, aug_lines)
         
@@ -129,7 +112,6 @@ def main():
     print("  🚀 5,000+ Image Dataset Expander (Steel, Aluminum, Wood)")
     print("=" * 60)
     
-    # 1. Expand Wood to 5,200 images
     print("\n🪵 1. Re-sampling Wood Dataset to 5,200 images...")
     from download_wood_10class import convert_yolo_wood, create_wood_dataset_yaml
     raw_wood = project_root / 'data' / 'raw' / 'wood_10class'
@@ -138,14 +120,12 @@ def main():
         convert_yolo_wood(raw_wood, out_wood, max_train=4000, max_val=600, max_test=600)
         create_wood_dataset_yaml(out_wood, project_root)
         
-    # 2. Expand Steel to 5,200 images
     print("\n🔩 2. Expanding Steel Dataset to 5,200 images...")
     steel_train_img = project_root / 'data' / 'processed' / 'steel_unified' / 'train' / 'images'
     steel_train_lbl = project_root / 'data' / 'processed' / 'steel_unified' / 'train' / 'labels'
     if steel_train_img.exists():
         expand_dataset_split(steel_train_img, steel_train_lbl, target_count=4000, prefix="Steel Train")
         
-    # 3. Expand Aluminum to 5,500 images
     print("\n🪶 3. Expanding Aluminum Dataset to 5,500 images...")
     al_dir = project_root / 'data' / 'processed_aluminum'
     al_train_img = al_dir / 'images' / 'train'

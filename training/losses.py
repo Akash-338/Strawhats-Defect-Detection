@@ -11,15 +11,13 @@ class MorphologyAwareLoss(nn.Module):
         self.morph_loss = nn.MSELoss()
 
     def forward(self, morph_preds, morph_targets, classification_preds, classification_targets, yolo_loss=0.0):
-        # L_cce: CrossEntropyLoss on refined classification head
-        # classification_preds must be raw logits (not softmax)
+        
         l_cce = self.cce_loss(classification_preds, classification_targets)
         
-        # L_morph: morphology consistency regularization (MSE between predicted and extracted features)
-        # MSE is appropriate for continuous 11-dim morphological descriptors
+        
         l_morph = self.morph_loss(morph_preds, morph_targets)
         
-        # L_total = L_yolo + alpha*L_cce + lambda*L_morph
+        
         l_total = yolo_loss + self.alpha * l_cce + self.lambda_morph * l_morph
         
         loss_dict = {

@@ -5,21 +5,7 @@ import zipfile
 from pathlib import Path
 from typing import List, Dict
 
-# MANUAL DOWNLOAD INSTRUCTIONS
-# If the Kaggle API is not set up, you can manually download the datasets from the following URLs:
-# 
-# Steel:
-# - NEU-DET: https://www.kaggle.com/datasets/kaustubhdikshit/neu-surface-defect-database
-# - Severstal: https://www.kaggle.com/competitions/severstal-steel-defect-detection
-#
-# Aluminum:
-# - Aluminum Profile Defects: https://www.kaggle.com/datasets/kaixu7/defects-in-aluminium-profiles
-# - GC10-DET: https://www.kaggle.com/datasets/alex000kim/gc10det
-#
-# Wood:
-# - Wood Surface Defects: https://www.kaggle.com/datasets/rishikeshkonapure/large-scale-image-dataset-of-wood-surface-defects
-#
-# Extract the contents into data/steel, data/aluminum, and data/wood respectively.
+
 
 DATASETS: Dict[str, List[Dict[str, str]]] = {
     'steel': [
@@ -36,7 +22,7 @@ DATASETS: Dict[str, List[Dict[str, str]]] = {
 }
 
 def ensure_kaggle_installed():
-    """Ensures kaggle module is installed."""
+
     try:
         import kaggle
     except ImportError:
@@ -45,7 +31,7 @@ def ensure_kaggle_installed():
         print("Kaggle installed successfully.")
 
 def download_and_extract(item: Dict[str, str], output_dir: Path):
-    """Downloads a Kaggle dataset or competition and extracts it."""
+    
     output_dir.mkdir(parents=True, exist_ok=True)
     item_id = item['id']
     item_type = item['type']

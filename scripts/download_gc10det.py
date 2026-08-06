@@ -1,11 +1,3 @@
-"""
-Download and convert GC10-DET steel surface defect dataset to YOLO format.
-GC10-DET: 3,570 images, 10 defect classes, lab-controlled (morphology-friendly).
-
-Usage:
-    python scripts/download_gc10det.py
-"""
-
 import os
 import sys
 import json
@@ -15,8 +7,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from tqdm import tqdm
 
-# ── Class mapping ─────────────────────────────────────────────────────────────
-# GC10-DET 10 classes (start from ID 6 to not clash with NEU-DET 0-5)
+
 GC10_CLASSES = {
     'punching':      6,
     'weld_line':     7,
@@ -24,16 +15,13 @@ GC10_CLASSES = {
     'water_spot':    9,
     'oil_spot':      10,
     'silk_spot':     11,
-    'inclusion':     1,   # Same as NEU-DET inclusion → reuse ID 1
+    'inclusion':     1,   
     'rolled_pit':    12,
     'crease':        13,
     'waist_folding': 14,
 }
 
-# Also handle variant spellings found in the dataset
-# INCLUDING Chinese pinyin names used in the Kaggle version!
 GC10_ALIASES = {
-    # English variants
     'weldline':     'weld_line',
     'crescentgap':  'crescent_gap',
     'waterspot':    'water_spot',
@@ -41,7 +29,6 @@ GC10_ALIASES = {
     'silkspot':     'silk_spot',
     'rolledpit':    'rolled_pit',
     'waistfolding': 'waist_folding',
-    # Chinese pinyin numbered names (Kaggle version)
     '1_chongkong':  'punching',      # 冲孔 = punching holes
     '2_hanfeng':    'weld_line',     # 焊缝 = weld seam
     '3_yueyawan':   'crescent_gap',  # 月牙弯 = crescent gap
@@ -79,7 +66,6 @@ def download_gc10det(output_dir: Path):
     raw_dir = output_dir / 'gc10det'
     raw_dir.mkdir(parents=True, exist_ok=True)
     
-    # Check if already downloaded/extracted
     existing_xmls = list(raw_dir.rglob('*.xml'))
     if len(existing_xmls) > 0:
         print(f"✅ Found {len(existing_xmls)} existing XML annotations in {raw_dir}")
@@ -118,18 +104,15 @@ def parse_voc_xml(xml_path: Path):
     width = int(size.find('width').text)
     height = int(size.find('height').text)
     
-    # Find corresponding image
     filename = root.find('filename').text
     
     annotations = []
     for obj in root.findall('object'):
         name = obj.find('name').text.lower().strip()
         
-        # Normalize class name
         name = GC10_ALIASES.get(name, name)
         
         if name not in GC10_CLASSES:
-            # Try partial match
             matched = next((k for k in GC10_CLASSES if k in name or name in k), None)
             if matched:
                 name = matched
@@ -145,13 +128,11 @@ def parse_voc_xml(xml_path: Path):
         xmax = float(bndbox.find('xmax').text)
         ymax = float(bndbox.find('ymax').text)
         
-        # Convert to YOLO format (normalized center x, y, w, h)
         x_center = ((xmin + xmax) / 2) / width
         y_center = ((ymin + ymax) / 2) / height
         w = (xmax - xmin) / width
         h = (ymax - ymin) / height
         
-        # Clamp to [0, 1]
         x_center = max(0.0, min(1.0, x_center))
         y_center = max(0.0, min(1.0, y_center))
         w = max(0.001, min(1.0, w))
@@ -202,7 +183,7 @@ def convert_gc10det(raw_dir: Path, out_dir: Path):
             dest_img = images_out / img_path.name
             shutil.copy2(img_path, dest_img)
             
-            # Write label
+             
             label_name = img_path.stem + '.txt'
             dest_label = labels_out / label_name
             with open(dest_label, 'w') as f:
@@ -245,13 +226,10 @@ def main():
     print("  Steel surface defect dataset — 3,570 images, 10 classes")
     print("=" * 60)
     
-    # Step 1: Download
     raw_gc10 = download_gc10det(raw_dir)
     
-    # Step 2: Convert
     converted = convert_gc10det(raw_gc10, gc10_out)
     
-    # Step 3: Save class map
     save_class_map(gc10_out)
     
     print(f"\n✅ Done! GC10-DET converted to YOLO format:")

@@ -1,14 +1,4 @@
-"""
-download_severstal.py
-Downloads Severstal Steel Defect Detection from Kaggle, processes RLE masks,
-extracts bounding boxes, crops patches, and outputs YOLO-format labels.
 
-Kaggle API Setup Instructions:
-1. Install Kaggle CLI: pip install kaggle
-2. Get API token: Go to Kaggle.com -> Settings -> Create New Token (kaggle.json)
-3. Place kaggle.json in ~/.kaggle/ (Linux/Mac) or C:\\Users\\<User>\\.kaggle\\ (Windows)
-4. Accept the competition rules on Kaggle before downloading.
-"""
 
 import argparse
 import logging
@@ -25,13 +15,11 @@ from tqdm import tqdm
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Severstal classes: 1: patches, 2: scratches, 3: crazing, 4: pitted_surface
-# Target classes for YOLO: {0: crazing, 1: inclusion, 2: patches, 3: pitted_surface, 4: rolled_in_scale, 5: scratches}
 CLASS_MAPPING = {
-    1: 2,  # patches
-    2: 5,  # scratches
-    3: 0,  # crazing
-    4: 3   # pitted_surface
+    1: 2,  
+    2: 5,  
+    3: 0,  
+    4: 3   
 }
 
 def download_dataset(data_dir: Path) -> None:

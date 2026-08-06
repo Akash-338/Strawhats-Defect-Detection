@@ -1,32 +1,3 @@
-"""
-convert_ali2018_aluminum.py  (v2 — fixed)
-==========================================
-The ali2018 dataset uses Chinese filenames and is organized as
-folder-per-class (no separate XML annotations). Each subfolder name
-IS the class label.
-
-Strategy: whole-image bounding box (0.5 0.5 1.0 1.0) per image,
-class mapped from folder name → nearest GC10-DET class index.
-
-ali2018 folder name                 → GC10-DET class id  (name)
-----------------------------          -----------------   ------
-Be injured by a collision           → 0                  crease
-Coating cracking                    → 1                  crescent_gap
-Convex powder                       → 6                  oil_spot
-Dirty spot                          → 6                  oil_spot
-Drain bottom                        → 3                  welding_line
-Orange peel                         → 2                  water_spot
-The transverse strip is dented      → 0                  crease
-non-conducting                      → 4                  silk_spot
-pitting                             → 8                  rolling_pit
-scuffing                            → 9                  waist_fold
-Clean sample                        → SKIP (no defect)
-
-Usage:
-    python scripts/convert_ali2018_aluminum.py          # dry run
-    python scripts/convert_ali2018_aluminum.py --apply  # write files
-"""
-
 import argparse
 import logging
 import random
@@ -45,10 +16,10 @@ RANDOM_SEED = 42
 TRAIN_RATIO = 0.70
 VAL_RATIO   = 0.15
 
-# Whole-image bounding box template (class_id cx cy w h)
+
 WHOLE_IMG_BOX = "0.500000 0.500000 1.000000 1.000000"
 
-# Folder name → GC10-DET class index mapping (case-insensitive)
+
 FOLDER_CLASS_MAP = {
     "be injured by a collision":       0,  # crease
     "coating cracking":                1,  # crescent_gap
@@ -60,7 +31,7 @@ FOLDER_CLASS_MAP = {
     "non-conducting":                  4,  # silk_spot
     "pitting":                         8,  # rolling_pit
     "scuffing":                        9,  # waist_fold
-    # "clean sample" → omitted = skip
+    
 }
 
 IMG_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
@@ -81,7 +52,7 @@ def collect_ali2018_pairs() -> list[tuple[Path, str]]:
 
         folder_name_lower = subfolder.name.lower().strip()
 
-        # Skip clean/no-defect class
+        
         if "clean" in folder_name_lower:
             imgs = [f for f in subfolder.iterdir() if f.suffix.lower() in IMG_EXTENSIONS]
             skipped_clean += len(imgs)
@@ -133,19 +104,19 @@ def append_to_splits(pairs: list[tuple[Path, str]], dry_run: bool = True) -> Non
             out_lbl.mkdir(parents=True, exist_ok=True)
 
             for img_path, label_line in split_pairs:
-                # Use bytes-based copy to handle Chinese/Unicode filenames
+                
                 dest_stem = f"ali_{abs(hash(str(img_path))) % 10_000_000:07d}"
                 dest_img  = out_img / (dest_stem + img_path.suffix.lower())
                 dest_lbl  = out_lbl / (dest_stem + ".txt")
 
-                # Collision guard (extremely unlikely with hash)
+                
                 counter = 1
                 while dest_img.exists():
                     dest_img = out_img / (dest_stem + f"_{counter}" + img_path.suffix.lower())
                     dest_lbl = out_lbl / (dest_stem + f"_{counter}.txt")
                     counter += 1
 
-                # shutil.copy2 handles Unicode paths fine on Python 3.8+
+                
                 shutil.copy2(img_path, dest_img)
                 dest_lbl.write_text(label_line, encoding="utf-8")
 
@@ -175,7 +146,7 @@ def main():
     append_to_splits(pairs, dry_run=dry_run)
 
     n_train_new = int(len(pairs) * TRAIN_RATIO)
-    existing_train = 1604  # original GC10-DET count
+    existing_train = 1604  
 
     logger.info("\n" + "=" * 60)
     logger.info("SUMMARY")

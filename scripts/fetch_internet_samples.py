@@ -1,9 +1,4 @@
-"""
-scripts/fetch_internet_samples.py
-==================================
-Fetch real-world defect images from public sources, run InferencePipeline,
-and save annotated detection results into demo_samples/internet_test/
-"""
+
 
 import os
 import sys
@@ -16,7 +11,6 @@ sys.path.insert(0, str(ROOT))
 
 from inference.pipeline import InferencePipeline
 
-# Direct public image URLs of real-world metal & wood defects
 SAMPLE_URLS = [
     ("internet_steel_scratches.jpg", "https://raw.githubusercontent.com/kaustubhdikshit/NEU-Surface-Defect-Database/master/NEU-DET/train/images/scratches/scratches_15.jpg"),
     ("internet_steel_patches.jpg", "https://raw.githubusercontent.com/kaustubhdikshit/NEU-Surface-Defect-Database/master/NEU-DET/train/images/patches/patches_25.jpg"),
