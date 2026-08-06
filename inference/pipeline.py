@@ -252,9 +252,9 @@ class InferencePipeline:
             edges = cv2.Canny(blurred, low_t, high_t)
             
             # Probabilistic Hough Line Transform
-            # minLineLength: lines must be at least 8% of image width
-            min_len = int(w * 0.08)
-            lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=40,
+            # minLineLength: lines must be at least 15% of image width to filter wood grain
+            min_len = int(w * 0.15)
+            lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=55,
                                     minLineLength=min_len, maxLineGap=15)
             
             if lines is None or len(lines) == 0:
@@ -275,13 +275,12 @@ class InferencePipeline:
                 return []
             
             # Group nearby lines into scratch clusters using simple spatial grouping
-            scratches = []
+            raw_boxes = []
             used = [False] * len(long_lines)
             
             for i, (x1a, y1a, x2a, y2a, la) in enumerate(long_lines):
                 if used[i]:
                     continue
-                # Start a cluster with this line
                 cluster_pts = [(x1a, y1a), (x2a, y2a)]
                 used[i] = True
                 total_len = la
@@ -289,11 +288,10 @@ class InferencePipeline:
                 for j, (x1b, y1b, x2b, y2b, lb) in enumerate(long_lines):
                     if used[j]:
                         continue
-                    # Check if line j is close to any point in cluster
                     mid_a = ((x1a + x2a) // 2, (y1a + y2a) // 2)
                     mid_b = ((x1b + x2b) // 2, (y1b + y2b) // 2)
                     dist = np.sqrt((mid_a[0] - mid_b[0])**2 + (mid_a[1] - mid_b[1])**2)
-                    if dist < min_len * 2:
+                    if dist < min_len * 1.5:
                         cluster_pts.extend([(x1b, y1b), (x2b, y2b)])
                         used[j] = True
                         total_len += lb
@@ -301,7 +299,7 @@ class InferencePipeline:
                 # Build bounding box from cluster
                 xs = [p[0] for p in cluster_pts]
                 ys = [p[1] for p in cluster_pts]
-                pad = 12
+                pad = 10
                 bx1 = max(0, min(xs) - pad)
                 by1 = max(0, min(ys) - pad)
                 bx2 = min(w, max(xs) + pad)
@@ -311,31 +309,62 @@ class InferencePipeline:
                 box_h = by2 - by1
                 aspect = max(box_w, box_h) / max(min(box_w, box_h), 1)
                 
-                # Scratches are elongated (aspect > 2.5) and cover meaningful area
-                if aspect >= 2.5 and total_len >= min_len * 1.5:
-                    # Confidence based on line length relative to image
-                    conf = min(0.85, 0.3 + (total_len / max(w, h)) * 0.8)
-                    scratches.append({
-                        "class": "scratch",
-                        "conf": round(conf, 3),
-                        "bbox": [bx1, by1, bx2, by2]
-                    })
-                    
-                    # Draw on annotated frame
-                    color = (0, 165, 255)  # Orange for scratch
-                    cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 3)
-                    label = f"SCRATCH {conf*100:.0f}%"
-                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
-                    lbl_top = max(0, by1 - th - 8)
-                    cv2.rectangle(annotated, (bx1, lbl_top), (bx1 + tw + 8, by1), color, -1)
-                    cv2.putText(annotated, label, (bx1 + 4, by1 - 4),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+                # Scratches must be elongated (aspect >= 2.8)
+                if aspect >= 2.8 and total_len >= min_len * 1.2:
+                    conf = min(0.85, 0.40 + (total_len / max(w, h)) * 0.6)
+                    raw_boxes.append((bx1, by1, bx2, by2, conf))
+            
+            if not raw_boxes:
+                return []
+                
+            # Perform NMS / Box Merging to eliminate overlapping duplicate scratch boxes
+            raw_boxes.sort(key=lambda b: b[4], reverse=True)
+            merged_boxes = []
+            
+            for b in raw_boxes:
+                x1, y1, x2, y2, c = b
+                overlap = False
+                for m in merged_boxes:
+                    mx1, my1, mx2, my2, _ = m
+                    # Calculate IoU
+                    inter_x1 = max(x1, mx1)
+                    inter_y1 = max(y1, my1)
+                    inter_x2 = min(x2, mx2)
+                    inter_y2 = min(y2, my2)
+                    inter_area = max(0, inter_x2 - inter_x1) * max(0, inter_y2 - inter_y1)
+                    box_area = (x2 - x1) * (y2 - y1)
+                    m_area = (mx2 - mx1) * (my2 - my1)
+                    iou = inter_area / float(box_area + m_area - inter_area + 1e-6)
+                    if iou > 0.35:
+                        overlap = True
+                        break
+                if not overlap:
+                    merged_boxes.append(b)
+                    if len(merged_boxes) >= 4: # Cap at 4 clean scratch boxes max
+                        break
+            
+            scratches = []
+            for (bx1, by1, bx2, by2, conf) in merged_boxes:
+                scratches.append({
+                    "class": "scratch",
+                    "conf": round(conf, 3),
+                    "bbox": [bx1, by1, bx2, by2]
+                })
+                
+                # Draw on annotated frame
+                color = (0, 165, 255)  # Orange for scratch
+                cv2.rectangle(annotated, (bx1, by1), (bx2, by2), color, 3)
+                label = f"SCRATCH {conf*100:.0f}%"
+                (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+                lbl_top = max(0, by1 - th - 8)
+                cv2.rectangle(annotated, (bx1, lbl_top), (bx1 + tw + 8, by1), color, -1)
+                cv2.putText(annotated, label, (bx1 + 4, by1 - 4),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
             
             return scratches
         except Exception as e:
             print(f"⚠️ Scratch detector warning: {e}")
-            return []  
-        return scratches
+            return []
 
     def run(self, frame: np.ndarray, conf_threshold: float = 0.10) -> Dict[str, Any]:
         """Alias for predict method."""

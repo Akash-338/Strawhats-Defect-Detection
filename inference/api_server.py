@@ -305,8 +305,15 @@ async def inference_loop():
             try:
                 result = _pipeline.run(frame)
             except Exception as e:
-                logger.debug(f"Pipeline error: {e}")
-                result = _mock_detect(frame)
+                logger.error(f"Inference loop error: {e}")
+                result = {
+                    "material": "STEEL",
+                    "verdict": "PASS",
+                    "confidence": 0.0,
+                    "defect_count": 0,
+                    "detections": [],
+                    "annotated": frame,
+                }
         else:
             result = _mock_detect(frame)
 
@@ -477,6 +484,7 @@ async def detect_image(image: UploadFile = File(...)) -> Dict[str, Any]:
         try:
             result = _pipeline.run(frame)
         except Exception as e:
+            logger.error(f"❌ Pipeline run error in detect: {e}", exc_info=True)
             result = _mock_detect(frame)
     else:
         result = _mock_detect(frame)
@@ -524,7 +532,8 @@ async def scan_live() -> Dict[str, Any]:
     if _pipeline_loaded and _pipeline:
         try:
             result = _pipeline.run(frame)
-        except Exception:
+        except Exception as e:
+            logger.error(f"❌ Pipeline run error: {e}", exc_info=True)
             result = _mock_detect(frame)
     else:
         result = _mock_detect(frame)
