@@ -87,6 +87,7 @@ void resetState() {
   digitalWrite(RED_LED_PIN, LOW);
   digitalWrite(GREEN_LED_PIN, LOW);
   digitalWrite(BUZZER_PIN, LOW);
+  noTone(BUZZER_PIN);
   rejectServo.write(0); // Idle position
   
   displayBoot();
@@ -98,19 +99,34 @@ void fireReject() {
 
   digitalWrite(GREEN_LED_PIN, LOW);
   digitalWrite(RED_LED_PIN, HIGH);
+  
+  // 1. Loud 2kHz Buzzer Beep (works on both active & passive buzzers)
+  tone(BUZZER_PIN, 2000, 600);
   digitalWrite(BUZZER_PIN, HIGH);
-  rejectServo.write(90); // Sweep reject arm to 90 degrees
+  
+  // 2. Smooth Step-wise Servo Sweep (0 to 90 degrees)
+  for (int pos = 0; pos <= 90; pos += 5) {
+    rejectServo.write(pos);
+    delay(15);
+  }
   displayStatus("REJECT!");
   
-  delay(500);
-  digitalWrite(BUZZER_PIN, LOW); // Turn off buzzer sound after 500ms
+  delay(600);
+  digitalWrite(BUZZER_PIN, LOW);
+  noTone(BUZZER_PIN);
 }
 
 void firePass() {
   isRejected = false;
   digitalWrite(RED_LED_PIN, LOW);
   digitalWrite(GREEN_LED_PIN, HIGH);
-  rejectServo.write(0); // Arm stays at 0 degrees
+  
+  // Return servo arm smoothly to 0 degrees
+  for (int pos = 90; pos >= 0; pos -= 5) {
+    rejectServo.write(pos);
+    delay(15);
+  }
+  rejectServo.write(0);
   displayStatus("PASS");
   
   delay(1500);

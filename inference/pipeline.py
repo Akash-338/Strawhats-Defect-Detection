@@ -133,11 +133,17 @@ class InferencePipeline:
                 })
                 defect_count += 1
 
-        # ── Morphological Scratch Detector (fallback for thin linear defects) ──
+        # ── Morphological Scratch & Anomaly Detectors (fallback for defects YOLO misses) ──
         scratch_dets = self._detect_scratches(frame, annotated)
         for sd in scratch_dets:
             detections.append(sd)
             defect_count += 1
+
+        if defect_count == 0:
+            anomaly_dets = self._detect_surface_anomalies(frame, annotated)
+            for ad in anomaly_dets:
+                detections.append(ad)
+                defect_count += 1
 
         verdict = "FAIL" if defect_count > 0 else "PASS"
         top_conf = max([d["conf"] for d in detections], default=0.0) if detections else 0.0
@@ -168,6 +174,62 @@ class InferencePipeline:
             "annotated": annotated,
             "annotated_frame": annotated
         }
+
+    def _detect_surface_anomalies(self, frame: np.ndarray, annotated: np.ndarray) -> List[Dict[str, Any]]:
+        """Fallback detector for dark spots, inclusions, and irregular surface anomalies YOLO misses."""
+        try:
+            h, w = frame.shape[:2]
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if len(frame.shape) == 3 else frame.copy()
+            
+            # Contrast enhancement
+            clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8, 8))
+            enhanced = clahe.apply(gray)
+            blurred = cv2.GaussianBlur(enhanced, (5, 5), 1.0)
+            
+            # Adaptive threshold for dark defect blobs
+            thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                           cv2.THRESH_BINARY_INV, 19, 7)
+            
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            anomalies = []
+            min_area = (w * h) * 0.001   # at least 0.1% of frame area
+            max_area = (w * h) * 0.35    # at most 35% of frame area
+            
+            for cnt in contours:
+                area = cv2.contourArea(cnt)
+                if min_area <= area <= max_area:
+                    x, y, bw, bh = cv2.boundingRect(cnt)
+                    # Exclude outer border contours
+                    if x <= 5 or y <= 5 or (x + bw) >= (w - 5) or (y + bh) >= (h - 5):
+                        continue
+                    
+                    aspect = max(bw, bh) / max(min(bw, bh), 1)
+                    conf = min(0.78, 0.40 + (area / (w * h)) * 5.0)
+                    cls_name = "surface_anomaly" if aspect < 2.5 else "defect_crack"
+                    
+                    anomalies.append({
+                        "class": cls_name,
+                        "conf": round(conf, 3),
+                        "bbox": [x, y, x + bw, y + bh]
+                    })
+                    
+                    # Draw on annotated frame
+                    color = (0, 0, 255)
+                    cv2.rectangle(annotated, (x, y), (x + bw, y + bh), color, 3)
+                    label = f"{cls_name.upper()} {conf*100:.0f}%"
+                    (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 2)
+                    lbl_top = max(0, y - th - 8)
+                    cv2.rectangle(annotated, (x, lbl_top), (x + tw + 8, y), color, -1)
+                    cv2.putText(annotated, label, (x + 4, y - 4),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+                    
+                    if len(anomalies) >= 3:
+                        break
+            return anomalies
+        except Exception as e:
+            print(f"⚠️ Surface anomaly fallback warning: {e}")
+            return []
 
     def _detect_scratches(self, frame: np.ndarray, annotated: np.ndarray) -> List[Dict[str, Any]]:
         """Detect long linear scratches using Canny edges + Hough Line Transform.
