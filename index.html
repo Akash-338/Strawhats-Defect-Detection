@@ -621,6 +621,16 @@
           <span>Scan Now</span>
         </button>
 
+        <!-- Hardware Servo / LED Test Buttons -->
+        <div style="display:flex; gap:8px; width:100%; max-width:320px; margin-top:4px;">
+          <button class="ctrl-btn" onclick="testHardware('REJECT')" style="flex:1; padding:8px 10px; font-size:0.75rem; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.35); color:var(--fail);">
+            ⚡ Servo REJECT
+          </button>
+          <button class="ctrl-btn" onclick="testHardware('PASS')" style="flex:1; padding:8px 10px; font-size:0.75rem; background:rgba(34,197,94,0.18); border:1px solid rgba(34,197,94,0.35); color:var(--pass);">
+            🟢 Servo PASS
+          </button>
+        </div>
+
         <!-- Processing indicator -->
         <div class="proc-indicator">
           <div class="spin" id="spinner"></div>
@@ -876,6 +886,21 @@ function resetScanBtn() {
   scanBtn.querySelector('span:last-child').textContent = 'Scan Now';
   setStatus('live');
   E.procTxt.textContent = 'Scan complete — click Scan Now again';
+}
+
+async function testHardware(cmd) {
+  try {
+    E.procTxt.textContent = `Testing Hardware: ${cmd}...`;
+    const r = await fetch(`${API}/hardware/trigger?cmd=${cmd}`);
+    const data = await r.json();
+    if (data.status === 'ok') {
+      E.procTxt.textContent = `⚡ Hardware ${cmd} triggered on ${API}`;
+    } else {
+      E.procTxt.textContent = `⚠️ Hardware: ${data.message || 'Not connected'}`;
+    }
+  } catch(e) {
+    E.procTxt.textContent = `⚠️ Error testing hardware: ${e.message}`;
+  }
 }
 
 let webcamPollTimer = null;

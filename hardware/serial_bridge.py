@@ -29,22 +29,25 @@ class SerialBridge:
             self.port = self._auto_detect_port()
             
         if self.port:
-            try:
-                if self.ser and self.ser.is_open:
-                    self.ser.close()
-                self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
-                self.ser.dtr = False
-                self.ser.rts = False
-                time.sleep(1)  # Wait for ESP32/Arduino reset
-                self.connected = True
-                logging.info(f"Connected to Microcontroller (ESP32/Arduino) on {self.port} at {self.baudrate} baud.")
-                return True
-            except Exception as e:
-                logging.warning(f"Failed to connect on {self.port}: {e}")
-                self.connected = False
-                return False
+            for baud in [self.baudrate, 9600, 115200]:
+                try:
+                    if self.ser and self.ser.is_open:
+                        self.ser.close()
+                    self.ser = serial.Serial(self.port, baud, timeout=1)
+                    # Enable DTR/RTS for STM32 CDC / Virtual COM ports
+                    self.ser.dtr = True
+                    self.ser.rts = True
+                    time.sleep(0.5)  # Allow board USB stack to settle
+                    self.baudrate = baud
+                    self.connected = True
+                    logging.info(f"Connected to Microcontroller (STM32/ESP32/Arduino) on {self.port} at {self.baudrate} baud.")
+                    return True
+                except Exception as e:
+                    logging.warning(f"Failed to connect on {self.port} at {baud} baud: {e}")
+                    self.connected = False
+            return False
         else:
-            logging.warning("No Microcontroller (ESP32/Arduino) port provided or auto-detected.")
+            logging.warning("No Microcontroller (STM32/ESP32/Arduino) port provided or auto-detected.")
             self.connected = False
             return False
 
@@ -52,7 +55,9 @@ class SerialBridge:
         ports = serial.tools.list_ports.comports()
         for port in ports:
             desc = port.description.upper()
-            if any(k in desc for k in ["ESP32", "CP210", "CH340", "FTDI", "USB-SERIAL", "ARDUINO"]):
+            hwid = port.hwid.upper()
+            combined = f"{desc} {hwid}"
+            if any(k in combined for k in ["STM32", "STM", "STLINK", "ST-LINK", "NUCLEO", "MAPLE", "CDC", "ESP32", "CP210", "CH340", "FTDI", "USB-SERIAL", "ARDUINO"]):
                 return port.device
         return None
 
