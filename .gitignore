@@ -33,8 +33,6 @@ demo_samples/steel/
 demo_samples/wood/
 demo_samples/test_split/
 demo_samples/internet_test/
-datasets/coco8/images/
-demo/print_cards/
 *.zip
 *.tar.gz
 *.7z
@@ -87,3 +85,6 @@ demo_samples/
 *.jpeg
 datasets/coco8/images/
 demo/print_cards/
+
+datasets/coco8/labels/train/
+datasets/coco8/labels/val/
