@@ -21,7 +21,7 @@
 #define OLED_RESET      -1
 #define OLED_ADDR       0x3C
 
-#define REJECT_HOLD_MS  3000   // 3 seconds auto-reset back to initial state!
+#define REJECT_HOLD_MS  3000   // 3 SECONDS AUTO-RESET
 #define TEST_DELAY_MS   3000
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -105,7 +105,7 @@ void clearReject() {
   isRejected = false;
 
   servoSweep(SERVO_HOME);
-  digitalWrite(BUZZER_PIN, HIGH); // Buzzer OFF
+  digitalWrite(BUZZER_PIN, HIGH); // Active low buzzer OFF
   relayOff(RELAY_CH1_PIN);
   relayOff(RELAY_CH2_PIN);
   digitalWrite(LED_REJECT_PIN, LOW);
@@ -140,31 +140,12 @@ void parseStatusCommand(String data) {
   currentMaterial = payload.substring(0, commaIdx);
   currentDefectCount = payload.substring(commaIdx + 1).toInt();
 
-  displayStatus(isRejected ? "REJECT!" : "PASS");
+  bool defectFound = (currentDefectCount > 0) || isRejected;
+  displayStatus(defectFound ? "REJECT!" : "PASS");
   Serial.print("ACK:STATUS:");
   Serial.print(currentMaterial);
   Serial.print(",");
   Serial.println(currentDefectCount);
-}
-
-void runTestCycle() {
-  Serial.println("ACK:TEST_START");
-
-  currentMaterial = "Test";
-  currentDefectCount = 0;
-  clearReject();
-  delay(TEST_DELAY_MS);
-
-  currentMaterial = "Test";
-  currentDefectCount = 3;
-  fireReject();
-  delay(TEST_DELAY_MS);
-
-  currentMaterial = "---";
-  currentDefectCount = 0;
-  clearReject();
-
-  Serial.println("ACK:TEST_DONE");
 }
 
 void processCommand(String cmd) {
@@ -179,20 +160,8 @@ void processCommand(String cmd) {
   else if (cmd.startsWith("STATUS:")) {
     parseStatusCommand(cmd);
   }
-  else if (cmd == "TEST") {
-    runTestCycle();
-  }
   else if (cmd == "PING") {
     Serial.println("ACK:PONG");
-  }
-  else if (cmd.startsWith("SERVO:")) {
-    int angle = cmd.substring(6).toInt();
-    Serial.print("ACK:SERVO_MOVING_TO:");
-    Serial.println(angle);
-    rejectServo.write(angle);
-    delay(1000);
-    servoPos = angle;
-    Serial.println("ACK:SERVO_DONE");
   }
   else {
     Serial.print("ERR:UNKNOWN_CMD:");
@@ -234,7 +203,7 @@ void loop() {
     processCommand(cmd);
   }
 
-  // Auto-reset after 3 seconds (3000 ms) back to initial state!
+  // AUTO-RESET AFTER 3 SECONDS BACK TO INITIAL STATE!
   if (isRejected && (millis() - rejectStartTime > REJECT_HOLD_MS)) {
     resetToInitialState();
   }

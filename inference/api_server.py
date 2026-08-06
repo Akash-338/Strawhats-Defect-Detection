@@ -106,19 +106,20 @@ def _send_esp32_command(material: str, defects: int, verdict: str):
     """Sends hardware actuation commands to STM32 / ESP32 / Arduino microcontrollers."""
     if _serial_bridge:
         mat = str(material).upper()
-        # Guarantee REJECT if defects > 0 or verdict is FAIL/REJECT
         is_reject = (defects > 0) or (str(verdict).upper() in ["FAIL", "REJECT"])
         cmd = "REJECT" if is_reject else "PASS"
+        defect_val = max(1, defects) if is_reject else 0
         
         logger.info(f"⚡ Hardware trigger: {cmd} (defects={defects}, verdict={verdict})")
-        # Send primary hardware command with auto-retry if port reconnected
+        
+        # 1. Send status update first (sets material and defect count on OLED)
+        _serial_bridge.send(f"STATUS:{mat},{defect_val}")
+        time.sleep(0.05)
+        
+        # 2. Send primary hardware command (REJECT or PASS) with retry logic
         success = _serial_bridge.send(cmd)
         if not success and _serial_bridge.is_connected():
             _serial_bridge.send(cmd)
-            
-        time.sleep(0.05)
-        # Send status update
-        _serial_bridge.send(f"STATUS:{mat},{defects}")
 
 # ── Mock detection (used when pipeline is not ready) ───────────────────────────
 import random
