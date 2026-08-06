@@ -202,7 +202,28 @@ class DefectDetector:
                     cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
 
                     # Label background
-              # ─── HUD Helpers ──────────────────────────────────────────────────────────────
+                    label_text = f"{label} {conf_score:.2f}"
+                    (tw, th), _ = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+                    ly1 = max(0, y1 - th - 8)
+                    ly2 = y1
+                    cv2.rectangle(out, (x1, ly1), (x1 + tw + 10, ly2), color, -1)
+                    cv2.putText(out, label_text, (x1 + 4, ly2 - 4),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
+
+                    detections.append({
+                        'label': label,
+                        'conf': conf_score,
+                        'box': (x1, y1, x2, y2),
+                        'color': color,
+                    })
+
+            return out, detections
+        except Exception as e:
+            logger.error(f"Detection error: {e}")
+            return frame_bgr, []
+
+
+# ─── HUD Helpers ──────────────────────────────────────────────────────────────
 def _alpha_rect(img: np.ndarray, x1: int, y1: int, x2: int, y2: int,
                 color: tuple, alpha: float, radius: int = 0) -> None:
     """Draw a semi-transparent filled rectangle."""
@@ -393,26 +414,6 @@ def draw_hud(frame: np.ndarray, material: str, mat_conf: float,
                     (0, 0, 0), 0.65, radius=10)
         cv2.putText(frame, state_text, (w//2 - stw//2, h//2 + 8),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.1, state_col, 2, cv2.LINE_AA)
-
-    return frame�──────────────────
-    cv2.rectangle(frame, (0, h - 28), (w, h), (20, 20, 20), -1)
-    controls = 'Q=Quit  S=Screenshot  P=Pause  SPACE=Freeze  +/-=Conf'
-    cv2.putText(frame, controls, (8, h - 8),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (160, 160, 160), 1, cv2.LINE_AA)
-
-    # ── Status badge ────────────────────────────────────────────────────────
-    if paused:
-        cv2.putText(frame, '[ PAUSED ]', (w // 2 - 80, h // 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.4, (0, 200, 255), 3, cv2.LINE_AA)
-    if frozen:
-        cv2.putText(frame, '[ FROZEN ]  SPACE to resume', (w // 2 - 180, h - 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (180, 220, 255), 2, cv2.LINE_AA)
-
-    # ── Team badge (top-right) ───────────────────────────────────────────────
-    badge = 'Team SafePath | RVCE 2026'
-    (bw, bh), _ = cv2.getTextSize(badge, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
-    cv2.putText(frame, badge, (w - bw - 8, 14),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (120, 120, 120), 1, cv2.LINE_AA)
 
     return frame
 
