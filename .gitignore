@@ -37,6 +37,7 @@ datasets/coco8/labels/train
 datasets/coco8/labels/val
 demo_samples/
 *.zip
+demo_samples/clean_demo/
 *.tar.gz
 *.7z
 *.csv
