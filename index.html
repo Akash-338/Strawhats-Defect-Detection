@@ -1,1177 +1,1641 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Strawhat-Pirates — Defect Inspection | RVCE 2026</title>
-  <meta name="description" content="AI-powered real-time surface defect detection for Steel and Wood. RVCE Hackathon 2026 — Team Strawhat Pirates." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    /* ── Tokens ──────────────────────────────────────────────── */
-    :root {
-      --bg:          #04070f;
-      --surface:     rgba(10, 16, 34, 0.92);
-      --surface2:    rgba(14, 22, 48, 0.88);
-      --border:      rgba(80, 110, 200, 0.14);
-      --border-hi:   rgba(80, 110, 200, 0.32);
-      --text:        #dde8ff;
-      --muted:       #5a6e96;
-      --accent:      #4ade80;
-      --steel:       #60a5fa;
-      --wood:        #fb923c;
-      --pass:        #22c55e;
-      --fail:        #ef4444;
-      --warn:        #fbbf24;
-      --font:        'Inter', system-ui, sans-serif;
-      --mono:        'JetBrains Mono', monospace;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strawhat-Pirates — Defect Inspection | RVCE 2026</title>
+    <meta
+      name="description"
+      content="AI-powered real-time surface defect detection for Steel and Wood. RVCE Hackathon 2026 — Team Strawhat Pirates."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #04070f;
+        --surface: rgba(10, 16, 34, 0.92);
+        --surface2: rgba(14, 22, 48, 0.88);
+        --border: rgba(80, 110, 200, 0.14);
+        --border-hi: rgba(80, 110, 200, 0.32);
+        --text: #dde8ff;
+        --muted: #5a6e96;
+        --accent: #4ade80;
+        --steel: #60a5fa;
+        --wood: #fb923c;
+        --pass: #22c55e;
+        --fail: #ef4444;
+        --warn: #fbbf24;
+        --font: "Inter", system-ui, sans-serif;
+        --mono: "JetBrains Mono", monospace;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      font-family: var(--font);
-      color: var(--text);
-      background: var(--bg);
-    }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        font-family: var(--font);
+        color: var(--text);
+        background: var(--bg);
+      }
 
-    body {
-      background-image:
-        radial-gradient(ellipse 70% 40% at 15% 0%,   rgba(59,130,246,0.10) 0%, transparent 55%),
-        radial-gradient(ellipse 55% 35% at 85% 100%, rgba(74,222,128,0.07) 0%, transparent 55%);
-    }
+      body {
+        background-image:
+          radial-gradient(
+            ellipse 70% 40% at 15% 0%,
+            rgba(59, 130, 246, 0.1) 0%,
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse 55% 35% at 85% 100%,
+            rgba(74, 222, 128, 0.07) 0%,
+            transparent 55%
+          );
+      }
 
-    /* ── Root layout: header + grid ─────────────────────────── */
-    .root {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
+      .root {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
 
-    /* ── Header ─────────────────────────────────────────────── */
-    header {
-      flex-shrink: 0;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(4, 7, 15, 0.8);
-      backdrop-filter: blur(16px);
-      z-index: 10;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .logo-icon {
-      width: 30px; height: 30px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #4ade80, #22d3ee);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px;
-    }
-    .logo-name { font-weight: 800; font-size: 1rem; letter-spacing: -.03em; }
-    .logo-tag  { font-size: .7rem; color: var(--muted); margin-left: 4px; }
+      header {
+        flex-shrink: 0;
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(4, 7, 15, 0.8);
+        backdrop-filter: blur(16px);
+        z-index: 10;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .logo-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #4ade80, #22d3ee);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+      }
+      .logo-name {
+        font-weight: 800;
+        font-size: 1rem;
+        letter-spacing: -0.03em;
+      }
+      .logo-tag {
+        font-size: 0.7rem;
+        color: var(--muted);
+        margin-left: 4px;
+      }
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .pill {
-      display: flex; align-items: center; gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border-hi);
-      font-size: .75rem; font-weight: 600;
-      background: var(--surface);
-    }
-    .live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--muted);
-      transition: background .3s;
-    }
-    .live-dot.on  { background: var(--pass); box-shadow: 0 0 8px var(--pass); animation: blink 1.4s infinite; }
-    .live-dot.rec { background: var(--fail); box-shadow: 0 0 8px var(--fail); animation: blink .9s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border-hi);
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--surface);
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        transition: background 0.3s;
+      }
+      .live-dot.on {
+        background: var(--pass);
+        box-shadow: 0 0 8px var(--pass);
+        animation: blink 1.4s infinite;
+      }
+      .live-dot.rec {
+        background: var(--fail);
+        box-shadow: 0 0 8px var(--fail);
+        animation: blink 0.9s infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
 
-    .fps-tag {
-      font-family: var(--mono);
-      font-size: .75rem;
-      color: var(--accent);
-      padding: 4px 10px;
-      border-radius: 7px;
-      background: rgba(74,222,128,.09);
-      border: 1px solid rgba(74,222,128,.18);
-    }
+      .fps-tag {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--accent);
+        padding: 4px 10px;
+        border-radius: 7px;
+        background: rgba(74, 222, 128, 0.09);
+        border: 1px solid rgba(74, 222, 128, 0.18);
+      }
 
-    .hitl-wrap {
-      display: flex;
-      align-items: center;
-      gap: 3px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--border-hi);
-      padding: 3px;
-      border-radius: 999px;
-    }
-    .hitl-btn {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-size: .72rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: all .2s;
-    }
-    .hitl-btn.active {
-      background: linear-gradient(135deg, rgba(56,189,248,.3), rgba(59,130,246,.3));
-      border: 1px solid rgba(56,189,248,.5);
-      color: #fff;
-    }
-    .hitl-btn.active.manual {
-      background: linear-gradient(135deg, rgba(251,146,60,.3), rgba(245,158,11,.3));
-      border: 1px solid rgba(251,146,60,.5);
-      color: #fed7aa;
-    }
+      .hitl-wrap {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid var(--border-hi);
+        padding: 3px;
+        border-radius: 999px;
+      }
+      .hitl-btn {
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .hitl-btn.active {
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.3),
+          rgba(59, 130, 246, 0.3)
+        );
+        border: 1px solid rgba(56, 189, 248, 0.5);
+        color: #fff;
+      }
+      .hitl-btn.active.manual {
+        background: linear-gradient(
+          135deg,
+          rgba(251, 146, 60, 0.3),
+          rgba(245, 158, 11, 0.3)
+        );
+        border: 1px solid rgba(251, 146, 60, 0.5);
+        color: #fed7aa;
+      }
 
-    .human-card {
-      margin-top: 10px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(251,146,60,.14), rgba(239,68,68,.14));
-      border: 1px solid rgba(251,146,60,.4);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .hc-header {
-      display: flex; align-items: center; justify-content: space-between;
-      font-size: .75rem; font-weight: 800; color: #fed7aa; letter-spacing: .05em;
-    }
-    .hc-desc { font-size: .8rem; color: #e2e8f0; }
-    .hc-btns { display: flex; gap: 10px; margin-top: 4px; }
-    .hc-btn {
-      flex: 1; padding: 8px 12px; border-radius: 8px; font-weight: 800; font-size: .8rem;
-      cursor: pointer; border: none; transition: all .15s;
-    }
-    .hc-btn.pass { background: #22c55e; color: #fff; }
-    .hc-btn.pass:hover { background: #16a34a; transform: translateY(-1px); }
-    .hc-btn.reject { background: #ef4444; color: #fff; }
-    .hc-btn.reject:hover { background: #dc2626; transform: translateY(-1px); }
+      .human-card {
+        margin-top: 10px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: linear-gradient(
+          135deg,
+          rgba(251, 146, 60, 0.14),
+          rgba(239, 68, 68, 0.14)
+        );
+        border: 1px solid rgba(251, 146, 60, 0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .hc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #fed7aa;
+        letter-spacing: 0.05em;
+      }
+      .hc-desc {
+        font-size: 0.8rem;
+        color: #e2e8f0;
+      }
+      .hc-btns {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .hc-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.8rem;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+      }
+      .hc-btn.pass {
+        background: #22c55e;
+        color: #fff;
+      }
+      .hc-btn.pass:hover {
+        background: #16a34a;
+        transform: translateY(-1px);
+      }
+      .hc-btn.reject {
+        background: #ef4444;
+        color: #fff;
+      }
+      .hc-btn.reject:hover {
+        background: #dc2626;
+        transform: translateY(-1px);
+      }
 
-  
-    .grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 60fr 40fr;
-      gap: 10px;
-      padding: 10px;
-      min-height: 0;
-    }
+      .grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 60fr 40fr;
+        gap: 10px;
+        padding: 10px;
+        min-height: 0;
+      }
 
+      .quad {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      }
+      .quad:hover {
+        border-color: var(--border-hi);
+      }
 
-    .quad {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-    }
-    .quad:hover { border-color: var(--border-hi); }
+      .q-label {
+        flex-shrink: 0;
+        padding: 8px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(8, 12, 28, 0.6);
+      }
+      .q-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .q-title::before {
+        content: "";
+        width: 3px;
+        height: 12px;
+        border-radius: 2px;
+        background: linear-gradient(#4ade80, #22d3ee);
+      }
+      .q-badge {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        border: 1px solid;
+      }
+      .q-badge.steel {
+        background: rgba(96, 165, 250, 0.12);
+        border-color: rgba(96, 165, 250, 0.3);
+        color: var(--steel);
+      }
+      .q-badge.wood {
+        background: rgba(251, 146, 60, 0.12);
+        border-color: rgba(251, 146, 60, 0.3);
+        color: var(--wood);
+      }
+      .q-badge.pass {
+        background: rgba(34, 197, 94, 0.12);
+        border-color: rgba(34, 197, 94, 0.3);
+        color: var(--pass);
+      }
+      .q-badge.fail {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: var(--fail);
+      }
 
-   
-    .q-label {
-      flex-shrink: 0;
-      padding: 8px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(8, 12, 28, 0.6);
-    }
-    .q-title {
-      font-size: .72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--muted);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .q-title::before {
-      content: '';
-      width: 3px; height: 12px;
-      border-radius: 2px;
-      background: linear-gradient(#4ade80, #22d3ee);
-    }
-    .q-badge {
-      font-size: .68rem; font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      border: 1px solid;
-    }
-    .q-badge.steel { background: rgba(96,165,250,.12); border-color: rgba(96,165,250,.3); color: var(--steel); }
-    .q-badge.wood  { background: rgba(251,146,60,.12);  border-color: rgba(251,146,60,.3);  color: var(--wood); }
-    .q-badge.pass  { background: rgba(34,197,94,.12);   border-color: rgba(34,197,94,.3);   color: var(--pass); }
-    .q-badge.fail  { background: rgba(239,68,68,.12);   border-color: rgba(239,68,68,.3);   color: var(--fail); }
+      .q-media {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #020409;
+        min-height: 0;
+      }
+      .q-media img,
+      .q-media video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      .q-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        text-align: center;
+        padding: 24px;
+      }
+      .q-placeholder .ph-icon {
+        font-size: 2.8rem;
+      }
+      .q-placeholder p {
+        font-size: 0.82rem;
+        line-height: 1.6;
+        max-width: 22ch;
+      }
 
-    .q-media {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      background: #020409;
-      min-height: 0;
-    }
-    .q-media img, .q-media video {
-      width: 100%; height: 100%;
-      object-fit: contain;
-      display: block;
-    }
-    .q-placeholder {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      color: var(--muted);
-      text-align: center;
-      padding: 24px;
-    }
-    .q-placeholder .ph-icon { font-size: 2.8rem; }
-    .q-placeholder p { font-size: .82rem; line-height: 1.6; max-width: 22ch; }
+      .scan-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(
+          to right,
+          transparent,
+          rgba(74, 222, 128, 0.7),
+          transparent
+        );
+        pointer-events: none;
+        display: none;
+      }
+      .scan-line.active {
+        display: block;
+        animation: scan 2.5s linear infinite;
+      }
+      @keyframes scan {
+        0% {
+          top: 52px;
+          opacity: 1;
+        }
+        95% {
+          opacity: 1;
+        }
+        100% {
+          top: 100%;
+          opacity: 0;
+        }
+      }
 
-   
-    .scan-line {
-      position: absolute;
-      left: 0; right: 0; height: 2px;
-      background: linear-gradient(to right, transparent, rgba(74,222,128,.7), transparent);
-      pointer-events: none;
-      display: none;
-    }
-    .scan-line.active {
-      display: block;
-      animation: scan 2.5s linear infinite;
-    }
-    @keyframes scan {
-      0%   { top: 52px; opacity: 1; }
-      95%  { opacity: 1; }
-      100% { top: 100%; opacity: 0; }
-    }
+      .output-overlays {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .ov-material {
+        position: absolute;
+        top: 44px;
+        left: 10px;
+        padding: 5px 11px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        border: 1px solid;
+        backdrop-filter: blur(8px);
+        display: none;
+      }
+      .ov-material.steel {
+        background: rgba(96, 165, 250, 0.18);
+        border-color: rgba(96, 165, 250, 0.5);
+        color: var(--steel);
+      }
+      .ov-material.aluminum {
+        background: rgba(168, 85, 247, 0.18);
+        border-color: rgba(168, 85, 247, 0.5);
+        color: #c084fc;
+      }
+      .ov-material.wood {
+        background: rgba(251, 146, 60, 0.18);
+        border-color: rgba(251, 146, 60, 0.5);
+        color: var(--wood);
+      }
 
- 
-    .output-overlays {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-    .ov-material {
-      position: absolute;
-      top: 44px; left: 10px;
-      padding: 5px 11px;
-      border-radius: 8px;
-      font-size: .78rem; font-weight: 700;
-      border: 1px solid;
-      backdrop-filter: blur(8px);
-      display: none;
-    }
-    .ov-material.steel    { background:rgba(96,165,250,.18); border-color:rgba(96,165,250,.5); color:var(--steel); }
-    .ov-material.aluminum { background:rgba(168,85,247,.18); border-color:rgba(168,85,247,.5); color:#c084fc; }
-    .ov-material.wood     { background:rgba(251,146,60,.18);  border-color:rgba(251,146,60,.5);  color:var(--wood); }
+      .ov-verdict {
+        position: absolute;
+        top: 44px;
+        right: 10px;
+        padding: 5px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        border: 2px solid;
+        backdrop-filter: blur(8px);
+        display: none;
+        transition: all 0.3s;
+      }
+      .ov-verdict.pass {
+        background: rgba(34, 197, 94, 0.2);
+        border-color: var(--pass);
+        color: var(--pass);
+        box-shadow: 0 0 18px rgba(34, 197, 94, 0.3);
+      }
+      .ov-verdict.fail {
+        background: rgba(239, 68, 68, 0.2);
+        border-color: var(--fail);
+        color: var(--fail);
+        box-shadow: 0 0 18px rgba(239, 68, 68, 0.3);
+      }
 
-    .ov-verdict {
-      position: absolute;
-      top: 44px; right: 10px;
-      padding: 5px 14px;
-      border-radius: 8px;
-      font-size: .85rem; font-weight: 900;
-      letter-spacing: .08em;
-      border: 2px solid;
-      backdrop-filter: blur(8px);
-      display: none;
-      transition: all .3s;
-    }
-    .ov-verdict.pass { background:rgba(34,197,94,.2); border-color:var(--pass); color:var(--pass); box-shadow:0 0 18px rgba(34,197,94,.3); }
-    .ov-verdict.fail { background:rgba(239,68,68,.2);  border-color:var(--fail); color:var(--fail); box-shadow:0 0 18px rgba(239,68,68,.3); }
+      .ov-conf {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        display: none;
+      }
+      .conf-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .conf-lbl {
+        font-size: 0.68rem;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .conf-track {
+        flex: 1;
+        height: 5px;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+      .conf-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(to right, #4ade80, #22d3ee);
+        transition: width 0.35s ease;
+        width: 0%;
+      }
+      .conf-num {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--accent);
+        width: 32px;
+        text-align: right;
+      }
 
-    .ov-conf {
-      position: absolute;
-      bottom: 10px; left: 10px; right: 10px;
-      display: none;
-    }
-    .conf-row { display: flex; align-items: center; gap: 8px; }
-    .conf-lbl { font-size: .68rem; color: var(--muted); white-space: nowrap; }
-    .conf-track {
-      flex: 1; height: 5px; border-radius: 99px;
-      background: rgba(255,255,255,.08);
-      overflow: hidden;
-    }
-    .conf-fill {
-      height: 100%; border-radius: 99px;
-      background: linear-gradient(to right, #4ade80, #22d3ee);
-      transition: width .35s ease;
-      width: 0%;
-    }
-    .conf-num { font-family: var(--mono); font-size: .72rem; color: var(--accent); width: 32px; text-align: right; }
+      .q-controls {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 18px;
+      }
 
-  
-    .q-controls {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 18px;
-    }
+      .ctrl-btn {
+        width: 100%;
+        max-width: 320px;
+        padding: 14px 24px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font);
+        font-size: 0.9rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      .ctrl-btn::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0);
+        transition: background 0.15s;
+      }
+      .ctrl-btn:hover::after {
+        background: rgba(255, 255, 255, 0.07);
+      }
+      .ctrl-btn:active {
+        transform: scale(0.97);
+      }
 
-    .ctrl-btn {
-      width: 100%; max-width: 320px;
-      padding: 14px 24px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-family: var(--font);
-      font-size: .9rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all .2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .ctrl-btn::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: rgba(255,255,255,0);
-      transition: background .15s;
-    }
-    .ctrl-btn:hover::after { background: rgba(255,255,255,.07); }
-    .ctrl-btn:active { transform: scale(.97); }
+      .btn-feed {
+        background: linear-gradient(
+          135deg,
+          rgba(96, 165, 250, 0.25),
+          rgba(59, 130, 246, 0.15)
+        );
+        border: 1px solid rgba(96, 165, 250, 0.4);
+        color: var(--steel);
+      }
 
-   
-    .btn-feed {
-      background: linear-gradient(135deg, rgba(96,165,250,.25), rgba(59,130,246,.15));
-      border: 1px solid rgba(96,165,250,.4);
-      color: var(--steel);
-    }
-   
-    .btn-live {
-      background: linear-gradient(135deg, rgba(74,222,128,.25), rgba(34,197,94,.15));
-      border: 1px solid rgba(74,222,128,.4);
-      color: var(--accent);
-    }
-    .btn-live.stop {
-      background: linear-gradient(135deg, rgba(239,68,68,.25), rgba(220,38,38,.15));
-      border-color: rgba(239,68,68,.4);
-      color: var(--fail);
-    }
+      .btn-live {
+        background: linear-gradient(
+          135deg,
+          rgba(74, 222, 128, 0.25),
+          rgba(34, 197, 94, 0.15)
+        );
+        border: 1px solid rgba(74, 222, 128, 0.4);
+        color: var(--accent);
+      }
+      .btn-live.stop {
+        background: linear-gradient(
+          135deg,
+          rgba(239, 68, 68, 0.25),
+          rgba(220, 38, 38, 0.15)
+        );
+        border-color: rgba(239, 68, 68, 0.4);
+        color: var(--fail);
+      }
 
-    #file-input { display: none; }
+      #file-input {
+        display: none;
+      }
 
-    
-    .proc-indicator {
-      font-size: .75rem;
-      color: var(--muted);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .spin {
-      width: 12px; height: 12px;
-      border: 2px solid rgba(255,255,255,.15);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      display: none;
-    }
-    .spin.active { display: block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+      .proc-indicator {
+        font-size: 0.75rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .spin {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+      }
+      .spin.active {
+        display: block;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
 
- 
-    .q-results {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      overflow-y: auto;
-      padding: 14px;
-      min-height: 0;
-    }
-    .q-results::-webkit-scrollbar { width: 4px; }
-    .q-results::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
+      .q-results {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        overflow-y: auto;
+        padding: 14px;
+        min-height: 0;
+      }
+      .q-results::-webkit-scrollbar {
+        width: 4px;
+      }
+      .q-results::-webkit-scrollbar-thumb {
+        background: var(--border-hi);
+        border-radius: 4px;
+      }
 
-  
-    .result-verdict {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      margin-bottom: 10px;
-      transition: all .4s;
-    }
-    .result-verdict.pass { border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.06); }
-    .result-verdict.fail { border-color: rgba(239,68,68,.35);  background: rgba(239,68,68,.06); }
-    .verdict-circle {
-      width: 52px; height: 52px;
-      border-radius: 50%;
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.4rem;
-      flex-shrink: 0;
-      transition: all .4s;
-    }
-    .result-verdict.pass .verdict-circle { border-color: var(--pass); background: rgba(34,197,94,.15); box-shadow:0 0 20px rgba(34,197,94,.25); }
-    .result-verdict.fail .verdict-circle { border-color: var(--fail); background: rgba(239,68,68,.15); box-shadow:0 0 20px rgba(239,68,68,.25); }
-    .verdict-info { flex: 1; }
-    .verdict-label {
-      font-size: 1.4rem; font-weight: 900;
-      letter-spacing: .1em;
-      transition: color .4s;
-    }
-    .result-verdict.pass .verdict-label { color: var(--pass); }
-    .result-verdict.fail .verdict-label { color: var(--fail); }
-    .verdict-detail { font-size: .75rem; color: var(--muted); margin-top: 3px; }
+      .result-verdict {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface2);
+        margin-bottom: 10px;
+        transition: all 0.4s;
+      }
+      .result-verdict.pass {
+        border-color: rgba(34, 197, 94, 0.35);
+        background: rgba(34, 197, 94, 0.06);
+      }
+      .result-verdict.fail {
+        border-color: rgba(239, 68, 68, 0.35);
+        background: rgba(239, 68, 68, 0.06);
+      }
+      .verdict-circle {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        transition: all 0.4s;
+      }
+      .result-verdict.pass .verdict-circle {
+        border-color: var(--pass);
+        background: rgba(34, 197, 94, 0.15);
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+      }
+      .result-verdict.fail .verdict-circle {
+        border-color: var(--fail);
+        background: rgba(239, 68, 68, 0.15);
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+      }
+      .verdict-info {
+        flex: 1;
+      }
+      .verdict-label {
+        font-size: 1.4rem;
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        transition: color 0.4s;
+      }
+      .result-verdict.pass .verdict-label {
+        color: var(--pass);
+      }
+      .result-verdict.fail .verdict-label {
+        color: var(--fail);
+      }
+      .verdict-detail {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 3px;
+      }
 
-    
-    .result-counts {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .count-card {
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-    }
-    .count-label { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
-    .count-value { font-size: 1.5rem; font-weight: 800; letter-spacing: -.04em; }
-    .count-value.defect { color: var(--warn); }
-    .count-value.material { color: var(--steel); }
+      /* Count row */
+      .result-counts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .count-card {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+      }
+      .count-label {
+        font-size: 0.68rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+      .count-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+      .count-value.defect {
+        color: var(--warn);
+      }
+      .count-value.material {
+        color: var(--steel);
+      }
 
-    
-    .result-section-title {
-      font-size: .7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em;
-      color: var(--muted);
-      margin-bottom: 8px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .result-section-title::before {
-      content: '';
-      width: 3px; height: 10px; border-radius: 2px;
-      background: var(--warn);
-    }
-    .defect-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-    .defect-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      border-radius: 9px;
-      background: rgba(239,68,68,.06);
-      border: 1px solid rgba(239,68,68,.18);
-      font-size: .82rem;
-      animation: slideIn .25s ease;
-    }
-    @keyframes slideIn { from{opacity:0;transform:translateX(6px)} to{opacity:1;transform:none} }
-    .defect-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fail); flex-shrink: 0; }
-    .defect-name { flex: 1; font-weight: 600; }
-    .defect-conf-bar {
-      width: 60px; height: 4px; border-radius: 99px;
-      background: rgba(255,255,255,.08);
-      overflow: hidden;
-    }
-    .defect-conf-fill { height: 100%; border-radius: 99px; background: var(--fail); }
-    .defect-conf-num { font-family: var(--mono); font-size: .7rem; color: var(--muted); width: 30px; text-align: right; }
+      .result-section-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .result-section-title::before {
+        content: "";
+        width: 3px;
+        height: 10px;
+        border-radius: 2px;
+        background: var(--warn);
+      }
+      .defect-list {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+      .defect-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        background: rgba(239, 68, 68, 0.06);
+        border: 1px solid rgba(239, 68, 68, 0.18);
+        font-size: 0.82rem;
+        animation: slideIn 0.25s ease;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(6px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .defect-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--fail);
+        flex-shrink: 0;
+      }
+      .defect-name {
+        flex: 1;
+        font-weight: 600;
+      }
+      .defect-conf-bar {
+        width: 60px;
+        height: 4px;
+        border-radius: 99px;
+        background: rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+      }
+      .defect-conf-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: var(--fail);
+      }
+      .defect-conf-num {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--muted);
+        width: 30px;
+        text-align: right;
+      }
 
-    .no-defect-msg {
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      padding: 20px; color: var(--muted); text-align: center; font-size: .82rem;
-    }
-    .no-defect-msg .icon { font-size: 1.8rem; }
+      .no-defect-msg {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 20px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 0.82rem;
+      }
+      .no-defect-msg .icon {
+        font-size: 1.8rem;
+      }
 
-    
-    .idle-msg {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 10px; padding: 30px 16px;
-      color: var(--muted); text-align: center;
-    }
-    .idle-msg .icon { font-size: 2.2rem; }
-    .idle-msg p { font-size: .8rem; line-height: 1.6; max-width: 22ch; }
-  </style>
-</head>
-<body>
-<div class="root">
-
-  
-  <header>
-    <div class="logo">
-      <div class="logo-icon">🔍</div>
-      <span class="logo-name">Strawhat-Pirates</span>
-      <span class="logo-tag">RVCE Hackathon 2026 · Problem #5</span>
-    </div>
-    <div class="header-right">
-      <div class="hitl-wrap">
-        <button class="hitl-btn active" id="hitl-auto" onclick="setHitlMode('auto')">🤖 Auto AI</button>
-        <button class="hitl-btn" id="hitl-manual" onclick="setHitlMode('manual')">👤 Human Review</button>
-      </div>
-      <div class="fps-tag" id="fps-tag">-- FPS</div>
-      <div class="pill">
-        <span class="live-dot" id="live-dot"></span>
-        <span id="live-txt">Idle</span>
-      </div>
-    </div>
-  </header>
-
-
-  <div class="grid">
-
-    <div class="quad" id="q-input">
-      <div class="q-label">
-        <span class="q-title">Input — Raw Image</span>
-        <span class="q-badge" id="input-badge" style="display:none"></span>
-      </div>
-      <div class="q-media" id="input-media">
-        <div class="q-placeholder" id="input-placeholder">
-          <div class="ph-icon">📷</div>
-          <p>Feed an image or start live demo using the controls below</p>
+      .idle-msg {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 30px 16px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .idle-msg .icon {
+        font-size: 2.2rem;
+      }
+      .idle-msg p {
+        font-size: 0.8rem;
+        line-height: 1.6;
+        max-width: 22ch;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="root">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">🔍</div>
+          <span class="logo-name">Strawhat-Pirates</span>
+          <span class="logo-tag">RVCE Hackathon 2026 · Problem #3</span>
         </div>
-       
-        <video id="input-video" autoplay muted playsinline style="display:none;width:100%;height:100%;object-fit:contain;"></video>
-        
-        <img id="input-img" alt="Input image" style="display:none;" />
-      </div>
-      <div class="scan-line" id="scan-line"></div>
-    </div>
-
-    
-    <div class="quad" id="q-output">
-      <div class="q-label">
-        <span class="q-title">Output — Detection Result</span>
-        <span class="q-badge" id="output-badge" style="display:none"></span>
-      </div>
-      <div class="q-media" id="output-media">
-        <div class="q-placeholder" id="output-placeholder">
-          <div class="ph-icon">🤖</div>
-          <p>Processed frame with bounding boxes will appear here</p>
+        <div class="header-right">
+          <div class="hitl-wrap">
+            <button
+              class="hitl-btn active"
+              id="hitl-auto"
+              onclick="setHitlMode('auto')"
+            >
+              🤖 Auto AI
+            </button>
+            <button
+              class="hitl-btn"
+              id="hitl-manual"
+              onclick="setHitlMode('manual')"
+            >
+              👤 Human Review
+            </button>
+          </div>
+          <div class="fps-tag" id="fps-tag">-- FPS</div>
+          <div class="pill">
+            <span class="live-dot" id="live-dot"></span>
+            <span id="live-txt">Idle</span>
+          </div>
         </div>
-        
-        <img id="output-img" alt="Detection output" style="display:none;" />
-      </div>
-      
-      <div class="output-overlays">
-        <div class="ov-material" id="ov-material">🔩 STEEL</div>
-        <div class="ov-verdict"  id="ov-verdict">PASS</div>
-        <div class="ov-conf" id="ov-conf">
-          <div class="conf-row">
-            <span class="conf-lbl">Confidence</span>
-            <div class="conf-track"><div class="conf-fill" id="conf-fill"></div></div>
-            <span class="conf-num" id="conf-num">0%</span>
+      </header>
+
+      <div class="grid">
+        <div class="quad" id="q-input">
+          <div class="q-label">
+            <span class="q-title">Input — Raw Image</span>
+            <span class="q-badge" id="input-badge" style="display: none"></span>
+          </div>
+          <div class="q-media" id="input-media">
+            <div class="q-placeholder" id="input-placeholder">
+              <div class="ph-icon">📷</div>
+              <p>Feed an image or start live demo using the controls below</p>
+            </div>
+
+            <video
+              id="input-video"
+              autoplay
+              muted
+              playsinline
+              style="
+                display: none;
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+              "
+            ></video>
+
+            <img id="input-img" alt="Input image" style="display: none" />
+          </div>
+          <div class="scan-line" id="scan-line"></div>
+        </div>
+
+        <div class="quad" id="q-output">
+          <div class="q-label">
+            <span class="q-title">Output — Detection Result</span>
+            <span
+              class="q-badge"
+              id="output-badge"
+              style="display: none"
+            ></span>
+          </div>
+          <div class="q-media" id="output-media">
+            <div class="q-placeholder" id="output-placeholder">
+              <div class="ph-icon">🤖</div>
+              <p>Processed frame with bounding boxes will appear here</p>
+            </div>
+
+            <img id="output-img" alt="Detection output" style="display: none" />
+          </div>
+
+          <div class="output-overlays">
+            <div class="ov-material" id="ov-material">🔩 STEEL</div>
+            <div class="ov-verdict" id="ov-verdict">PASS</div>
+            <div class="ov-conf" id="ov-conf">
+              <div class="conf-row">
+                <span class="conf-lbl">Confidence</span>
+                <div class="conf-track">
+                  <div class="conf-fill" id="conf-fill"></div>
+                </div>
+                <span class="conf-num" id="conf-num">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quad" id="q-controls">
+          <div class="q-label">
+            <span class="q-title">Inspection Mode</span>
+          </div>
+          <div class="q-controls">
+            <input type="file" id="file-input" accept="image/*" />
+            <button
+              class="ctrl-btn btn-feed"
+              id="btn-feed"
+              onclick="triggerFileInput()"
+            >
+              <span>📁</span>
+              <span>Feed Image</span>
+            </button>
+
+            <!-- Live Demo -->
+            <button
+              class="ctrl-btn btn-live"
+              id="btn-live"
+              onclick="toggleLive()"
+            >
+              <span>📡</span>
+              <span id="live-btn-txt">Start Live Demo</span>
+            </button>
+
+            <!-- Scan Now (visible only during Live Demo) -->
+            <button
+              class="ctrl-btn btn-feed"
+              id="btn-scan-now"
+              onclick="scanNow()"
+              style="
+                display: none;
+                background: linear-gradient(135deg, #00c853, #00e676);
+              "
+            >
+              <span>🔍</span>
+              <span>Scan Now</span>
+            </button>
+
+            <!-- Hardware Servo / LED Test Buttons -->
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                width: 100%;
+                max-width: 320px;
+                margin-top: 4px;
+              "
+            >
+              <button
+                class="ctrl-btn"
+                onclick="testHardware('REJECT')"
+                style="
+                  flex: 1;
+                  padding: 8px 10px;
+                  font-size: 0.75rem;
+                  background: rgba(239, 68, 68, 0.18);
+                  border: 1px solid rgba(239, 68, 68, 0.35);
+                  color: var(--fail);
+                "
+              >
+                ⚡ Servo REJECT
+              </button>
+              <button
+                class="ctrl-btn"
+                onclick="testHardware('PASS')"
+                style="
+                  flex: 1;
+                  padding: 8px 10px;
+                  font-size: 0.75rem;
+                  background: rgba(34, 197, 94, 0.18);
+                  border: 1px solid rgba(34, 197, 94, 0.35);
+                  color: var(--pass);
+                "
+              >
+                🟢 Servo PASS
+              </button>
+            </div>
+
+            <!-- Processing indicator -->
+            <div class="proc-indicator">
+              <div class="spin" id="spinner"></div>
+              <span id="proc-txt">Ready — choose a mode above</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Q4 : RESULTS (bottom-right) ───────────────────────── -->
+        <div class="quad" id="q-results">
+          <div class="q-label">
+            <span class="q-title">Detection Results</span>
+          </div>
+          <div class="q-results" id="results-body">
+            <!-- Idle placeholder -->
+            <div class="idle-msg" id="idle-msg">
+              <div class="icon">📊</div>
+              <p>Results will appear here after inspection</p>
+            </div>
+
+            <!-- Verdict row (hidden until result) -->
+            <div
+              class="result-verdict"
+              id="result-verdict"
+              style="display: none"
+            >
+              <div class="verdict-circle" id="verdict-circle">⏳</div>
+              <div class="verdict-info">
+                <div class="verdict-label" id="verdict-label">—</div>
+                <div class="verdict-detail" id="verdict-detail">
+                  No result yet
+                </div>
+              </div>
+            </div>
+
+            <!-- Counts (hidden until result) -->
+            <div class="result-counts" id="result-counts" style="display: none">
+              <div class="count-card">
+                <div class="count-label">Defects Found</div>
+                <div class="count-value defect" id="cnt-defects">0</div>
+              </div>
+              <div class="count-card">
+                <div class="count-label">Material</div>
+                <div class="count-value material" id="cnt-material">—</div>
+              </div>
+            </div>
+
+            <!-- Human-in-the-Loop Review Card -->
+            <div class="human-card" id="human-card" style="display: none">
+              <div class="hc-header">
+                <span>👤 HUMAN REVIEW REQUIRED</span>
+                <span style="font-size: 0.68rem; opacity: 0.8"
+                  >HITL MANUAL MODE</span
+                >
+              </div>
+              <div class="hc-desc" id="hc-desc">
+                AI recommends <b>REJECT</b>. Confirm or override decision:
+              </div>
+              <div class="hc-btns">
+                <button class="hc-btn pass" onclick="humanDecide('PASS')">
+                  ✓ Approve PASS
+                </button>
+                <button class="hc-btn reject" onclick="humanDecide('REJECT')">
+                  ✗ Approve REJECT
+                </button>
+              </div>
+            </div>
+
+            <!-- Defect class list (hidden until result) -->
+            <div id="defect-section" style="display: none">
+              <div class="result-section-title">Detected Classes</div>
+              <div class="defect-list" id="defect-list"></div>
+            </div>
           </div>
         </div>
       </div>
+      <!-- /grid -->
     </div>
 
-  
-    <div class="quad" id="q-controls">
-      <div class="q-label">
-        <span class="q-title">Inspection Mode</span>
-      </div>
-      <div class="q-controls">
-
-        
-        <input type="file" id="file-input" accept="image/*" />
-        <button class="ctrl-btn btn-feed" id="btn-feed" onclick="triggerFileInput()">
-          <span>📁</span>
-          <span>Feed Image</span>
-        </button>
-
-        
-        <button class="ctrl-btn btn-live" id="btn-live" onclick="toggleLive()">
-          <span>📡</span>
-          <span id="live-btn-txt">Start Live Demo</span>
-        </button>
-
-        
-        <button class="ctrl-btn btn-feed" id="btn-scan-now" onclick="scanNow()" style="display:none; background: linear-gradient(135deg, #00c853, #00e676);">
-          <span>🔍</span>
-          <span>Scan Now</span>
-        </button>
-
-        
-        <div style="display:flex; gap:8px; width:100%; max-width:320px; margin-top:4px;">
-          <button class="ctrl-btn" onclick="testHardware('REJECT')" style="flex:1; padding:8px 10px; font-size:0.75rem; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.35); color:var(--fail);">
-            ⚡ Servo REJECT
-          </button>
-          <button class="ctrl-btn" onclick="testHardware('PASS')" style="flex:1; padding:8px 10px; font-size:0.75rem; background:rgba(34,197,94,0.18); border:1px solid rgba(34,197,94,0.35); color:var(--pass);">
-            🟢 Servo PASS
-          </button>
-        </div>
-
-        
-        <div class="proc-indicator">
-          <div class="spin" id="spinner"></div>
-          <span id="proc-txt">Ready — choose a mode above</span>
-        </div>
-
-      </div>
-    </div>
-
-    
-    <div class="quad" id="q-results">
-      <div class="q-label">
-        <span class="q-title">Detection Results</span>
-      </div>
-      <div class="q-results" id="results-body">
-
-        
-        <div class="idle-msg" id="idle-msg">
-          <div class="icon">📊</div>
-          <p>Results will appear here after inspection</p>
-        </div>
-
-        
-        <div class="result-verdict" id="result-verdict" style="display:none">
-          <div class="verdict-circle" id="verdict-circle">⏳</div>
-          <div class="verdict-info">
-            <div class="verdict-label" id="verdict-label">—</div>
-            <div class="verdict-detail" id="verdict-detail">No result yet</div>
-          </div>
-        </div>
-
-        
-        <div class="result-counts" id="result-counts" style="display:none">
-          <div class="count-card">
-            <div class="count-label">Defects Found</div>
-            <div class="count-value defect" id="cnt-defects">0</div>
-          </div>
-          <div class="count-card">
-            <div class="count-label">Material</div>
-            <div class="count-value material" id="cnt-material">—</div>
-          </div>
-        </div>
-
-        <
-        <div class="human-card" id="human-card" style="display:none">
-          <div class="hc-header">
-            <span>👤 HUMAN REVIEW REQUIRED</span>
-            <span style="font-size:.68rem; opacity:.8">HITL MANUAL MODE</span>
-          </div>
-          <div class="hc-desc" id="hc-desc">AI recommends <b>REJECT</b>. Confirm or override decision:</div>
-          <div class="hc-btns">
-            <button class="hc-btn pass" onclick="humanDecide('PASS')">✓ Approve PASS</button>
-            <button class="hc-btn reject" onclick="humanDecide('REJECT')">✗ Approve REJECT</button>
-          </div>
-        </div>
-
-       
-        <div id="defect-section" style="display:none">
-          <div class="result-section-title">Detected Classes</div>
-          <div class="defect-list" id="defect-list"></div>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-</div>
-
-
-<script>
-const API = 'http://127.0.0.1:8000';
-let liveMode   = false;
-let liveStream = null;  // MediaStream for webcam
-let ws         = null;
-let frameCount = 0, fpsTimer = performance.now();
-
-
-const $ = id => document.getElementById(id);
-const E = {
-  liveDot:      $('live-dot'),
-  liveTxt:      $('live-txt'),
-  fpTag:        $('fps-tag'),
-  
-  inputPlaceholder: $('input-placeholder'),
-  inputVideo:   $('input-video'),
-  inputImg:     $('input-img'),
-  inputBadge:   $('input-badge'),
-  scanLine:     $('scan-line'),
- 
-  outputPlaceholder: $('output-placeholder'),
-  outputImg:    $('output-img'),
-  outputBadge:  $('output-badge'),
-  ovMaterial:   $('ov-material'),
-  ovVerdict:    $('ov-verdict'),
-  ovConf:       $('ov-conf'),
-  confFill:     $('conf-fill'),
-  confNum:      $('conf-num'),
-
-  fileInput:    $('file-input'),
-  btnFeed:      $('btn-feed'),
-  btnLive:      $('btn-live'),
-  liveBtnTxt:   $('live-btn-txt'),
-  spinner:      $('spinner'),
-  procTxt:      $('proc-txt'),
-
-  idleMsg:      $('idle-msg'),
-  resultVerdict:$('result-verdict'),
-  verdictCircle:$('verdict-circle'),
-  verdictLabel: $('verdict-label'),
-  verdictDetail:$('verdict-detail'),
-  resultCounts: $('result-counts'),
-  cntDefects:   $('cnt-defects'),
-  cntMaterial:  $('cnt-material'),
-  defectSection:$('defect-section'),
-  defectList:   $('defect-list'),
-};
-
-
-function triggerFileInput() {
-  if (liveMode) stopLive();
-  E.fileInput.click();
-}
-E.fileInput.addEventListener('change', async e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  await runImageInference(file);
-  e.target.value = '';
-});
-
-
-async function runImageInference(file) {
-  setStatus('processing');
-
-  // Show raw image in Q1
-  const url = URL.createObjectURL(file);
-  showInput('image', url);
-
-  
-  let result = null;
-  try {
-    const fd = new FormData();
-    fd.append('image', file);
-    const res = await fetch(`${API}/detect`, { method:'POST', body: fd,
-      signal: AbortSignal.timeout(8000) });
-    if (res.ok) result = await res.json();
-  } catch(_) {}
-
-  
-  if (!result) result = mockResult(file.name);
-
-  
-  if (result.output_image_b64) {
-    showOutput('image', 'data:image/jpeg;base64,' + result.output_image_b64);
-  } else {
-  
-    showOutput('image', url);
-  }
-
-  renderResult(result);
-  setStatus('idle');
-}
-
-
-async function toggleLive() {
-  if (liveMode) { stopLive(); return; }
-
-
-  const apiOnline = await checkAPI();
-  if (apiOnline) {
-    startAPILive();
-  } else {
-    startWebcamLive();
-  }
-}
-
-async function checkAPI() {
-  try {
-    const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(1500) });
-    return r.ok;
-  } catch(_) { return false; }
-}
-
-function startAPILive() {
-  liveMode = true;
-  setStatus('live');
-
-
-  showInput('mjpeg', `${API}/video_feed`);
-
-
-  connectWS();
-
-
-  E.liveBtnTxt.textContent = 'Stop Live Demo';
-  E.btnLive.classList.add('stop');
-  document.getElementById('btn-scan-now').style.display = '';
-  E.procTxt.textContent = 'Live preview — click Scan Now to analyze';
-}
-
-async function startWebcamLive() {
-  try {
-    liveStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-  } catch(err) {
-    startAPILive();
-    return;
-  }
-  liveMode = true;
-  setStatus('live');
-
-
-  E.inputVideo.srcObject = liveStream;
-  showInput('video');
-
-
-  E.liveBtnTxt.textContent = 'Stop Live Demo';
-  E.btnLive.classList.add('stop');
-  document.getElementById('btn-scan-now').style.display = '';
-  E.procTxt.textContent = 'Live preview — click Scan Now to analyze';
-}
-
-
-async function scanNow() {
-  if (!liveMode) return;
-  const scanBtn = document.getElementById('btn-scan-now');
-  scanBtn.disabled = true;
-  scanBtn.querySelector('span:last-child').textContent = 'Scanning...';
-  setStatus('busy');
-
-  let result = null;
-  try {
-    const r = await fetch(`${API}/scan`, { signal: AbortSignal.timeout(5000) });
-    if (r.ok) result = await r.json();
-  } catch(_) {}
-
-  if (!result || result.error) {
-    result = result || mockResult('live_scan');
-  }
-
-
-  if (result.output_image_b64) {
-    showOutput('image', 'data:image/jpeg;base64,' + result.output_image_b64);
-  }
-  renderResult(result);
-  resetScanBtn();
-}
-
-function resetScanBtn() {
-  const scanBtn = document.getElementById('btn-scan-now');
-  scanBtn.disabled = false;
-  scanBtn.querySelector('span:last-child').textContent = 'Scan Now';
-  setStatus('live');
-  E.procTxt.textContent = 'Scan complete — click Scan Now again';
-}
-
-async function testHardware(cmd) {
-  try {
-    E.procTxt.textContent = `Testing Hardware: ${cmd}...`;
-    const r = await fetch(`${API}/hardware/trigger?cmd=${cmd}`);
-    const data = await r.json();
-    if (data.status === 'ok') {
-      E.procTxt.textContent = `⚡ Hardware ${cmd} triggered on ${API}`;
-    } else {
-      E.procTxt.textContent = `⚠️ Hardware: ${data.message || 'Not connected'}`;
-    }
-  } catch(e) {
-    E.procTxt.textContent = `⚠️ Error testing hardware: ${e.message}`;
-  }
-}
-
-let webcamPollTimer = null;
-
-function stopLive() {
-  liveMode = false;
-  if (liveStream) { liveStream.getTracks().forEach(t => t.stop()); liveStream = null; }
-  if (ws) { ws.close(); ws = null; }
-  if (webcamPollTimer) { clearTimeout(webcamPollTimer); webcamPollTimer = null; }
-
-  E.inputVideo.srcObject = null;
-  E.inputVideo.style.display = 'none';
-  E.inputImg.style.display = 'none';
-  E.inputPlaceholder.style.display = 'flex';
-
-  E.outputImg.style.display = 'none';
-  E.outputPlaceholder.style.display = 'flex';
-
-  hideOverlays();
-  E.liveBtnTxt.textContent = 'Start Live Demo';
-  E.btnLive.classList.remove('stop');
-  E.scanLine.classList.remove('active');
-  document.getElementById('btn-scan-now').style.display = 'none';
-  setStatus('idle');
-}
-
-
-function connectWS() {
-  try {
-    ws = new WebSocket(`ws://127.0.0.1:8000/ws/live`);
-    ws.onmessage = evt => {
-      const d = JSON.parse(evt.data);
-      
-      if (d.stats?.fps) E.fpTag.textContent = d.stats.fps.toFixed(1) + ' FPS';
-    };
-    ws.onerror = () => {};
-    ws.onclose = () => { if (liveMode) setTimeout(connectWS, 2000); };
-  } catch(_) {}
-}
-
-
-let hitlMode = 'auto'; // 'auto' or 'manual'
-let pendingResult = null;
-
-function setHitlMode(mode) {
-  hitlMode = mode;
-  const btnAuto = $('hitl-auto');
-  const btnManual = $('hitl-manual');
-  const hc = $('human-card');
-  if (mode === 'auto') {
-    if (btnAuto) btnAuto.className = 'hitl-btn active';
-    if (btnManual) btnManual.className = 'hitl-btn';
-    if (hc) hc.style.display = 'none';
-  } else {
-    if (btnAuto) btnAuto.className = 'hitl-btn';
-    if (btnManual) btnManual.className = 'hitl-btn active manual';
-    if (pendingResult && hc) {
-      hc.style.display = 'flex';
-    }
-  }
-}
-
-async function humanDecide(verdict) {
-  const hc = $('human-card');
-  if (hc) hc.style.display = 'none';
-  if (pendingResult) {
-    pendingResult.verdict = verdict;
-    renderResultCore(pendingResult);
-    
-    try {
-      await fetch(`${API}/hitl_decision`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          verdict: verdict,
-          material: pendingResult.material || 'STEEL',
-          defects: (pendingResult.detections || []).length
-        })
+    <!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════ -->
+    <script>
+      const API = "http://127.0.0.1:8000";
+      let liveMode = false;
+      let liveStream = null; // MediaStream for webcam
+      let ws = null;
+      let frameCount = 0,
+        fpsTimer = performance.now();
+
+      /* ─── DOM references ────────────────────────────────────────── */
+      const $ = (id) => document.getElementById(id);
+      const E = {
+        liveDot: $("live-dot"),
+        liveTxt: $("live-txt"),
+        fpTag: $("fps-tag"),
+        // Q1 input
+        inputPlaceholder: $("input-placeholder"),
+        inputVideo: $("input-video"),
+        inputImg: $("input-img"),
+        inputBadge: $("input-badge"),
+        scanLine: $("scan-line"),
+        // Q2 output
+        outputPlaceholder: $("output-placeholder"),
+        outputImg: $("output-img"),
+        outputBadge: $("output-badge"),
+        ovMaterial: $("ov-material"),
+        ovVerdict: $("ov-verdict"),
+        ovConf: $("ov-conf"),
+        confFill: $("conf-fill"),
+        confNum: $("conf-num"),
+        // Q3 controls
+        fileInput: $("file-input"),
+        btnFeed: $("btn-feed"),
+        btnLive: $("btn-live"),
+        liveBtnTxt: $("live-btn-txt"),
+        spinner: $("spinner"),
+        procTxt: $("proc-txt"),
+        // Q4 results
+        idleMsg: $("idle-msg"),
+        resultVerdict: $("result-verdict"),
+        verdictCircle: $("verdict-circle"),
+        verdictLabel: $("verdict-label"),
+        verdictDetail: $("verdict-detail"),
+        resultCounts: $("result-counts"),
+        cntDefects: $("cnt-defects"),
+        cntMaterial: $("cnt-material"),
+        defectSection: $("defect-section"),
+        defectList: $("defect-list"),
+      };
+
+      /* ─── File input ────────────────────────────────────────────── */
+      function triggerFileInput() {
+        if (liveMode) stopLive();
+        E.fileInput.click();
+      }
+      E.fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        await runImageInference(file);
+        e.target.value = "";
       });
-    } catch(_) {}
-    pendingResult = null;
-  }
-}
 
+      /* ─── Image inference ───────────────────────────────────────── */
+      async function runImageInference(file) {
+        setStatus("processing");
 
-function renderResult(r) {
-  pendingResult = r;
-  if (hitlMode === 'manual') {
-    const hc = $('human-card');
-    const hcDesc = $('hc-desc');
-    if (hc && hcDesc) {
-      const rec = (r.verdict || 'REJECT').toUpperCase();
-      const nD = (r.detections || []).length;
-      hcDesc.innerHTML = `AI recommends <b style="color:${rec==='REJECT'?'#ef4444':'#22c55e'}">${rec}</b> (${nD} defect${nD!==1?'s':''} detected). Confirm or override:`;
-      hc.style.display = 'flex';
-    }
-  } else {
-    const hc = $('human-card');
-    if (hc) hc.style.display = 'none';
-  }
-  renderResultCore(r);
-}
+        // Show raw image in Q1
+        const url = URL.createObjectURL(file);
+        showInput("image", url);
 
-function renderResultCore(r) {
-  const isPass = (r.verdict||'').toUpperCase() === 'PASS';
-  const isFail = (r.verdict||'').toUpperCase() === 'FAIL';
-  const dets   = r.detections || [];
-  const mat    = (r.material || '').toLowerCase();
-  const conf   = r.confidence || 0;
+        // Try real API first
+        let result = null;
+        try {
+          const fd = new FormData();
+          fd.append("image", file);
+          const res = await fetch(`${API}/detect`, {
+            method: "POST",
+            body: fd,
+            signal: AbortSignal.timeout(8000),
+          });
+          if (res.ok) result = await res.json();
+        } catch (_) {}
 
+        // Fallback: mock result for demo
+        if (!result) result = mockResult(file.name);
 
-  if (mat) {
-    E.ovMaterial.style.display = 'block';
-    E.ovMaterial.className = 'ov-material ' + mat;
-    E.ovMaterial.textContent = mat === 'steel' ? '🔩 STEEL' : (mat === 'aluminum' ? '⚙️ ALUMINUM' : '🪵 WOOD');
-  }
- 
-  if (r.verdict) {
-    E.ovVerdict.style.display = 'block';
-    E.ovVerdict.className = 'ov-verdict ' + (isPass ? 'pass' : isFail ? 'fail' : '');
-    E.ovVerdict.textContent = isPass ? '✓ PASS' : '✗ REJECT';
-  }
+        // Show annotated output
+        if (result.output_image_b64) {
+          showOutput(
+            "image",
+            "data:image/jpeg;base64," + result.output_image_b64,
+          );
+        } else {
+          // Same image but with overlays drawn by JS (no backend annotation)
+          showOutput("image", url);
+        }
 
-  E.ovConf.style.display = 'block';
-  const pct = Math.round(conf * 100);
-  E.confFill.style.width = pct + '%';
-  E.confNum.textContent  = pct + '%';
+        renderResult(result);
+        setStatus("idle");
+      }
 
+      /* ─── Live demo ─────────────────────────────────────────────── */
+      async function toggleLive() {
+        if (liveMode) {
+          stopLive();
+          return;
+        }
 
-  if (r.verdict) {
-    E.outputBadge.style.display = 'inline-flex';
-    E.outputBadge.className = 'q-badge ' + (isPass ? 'pass' : 'fail');
-    E.outputBadge.textContent = isPass ? 'PASS' : 'REJECT';
-  }
+        // Check if API server is running (uses backend camera stream, bypassing browser permission locks)
+        const apiOnline = await checkAPI();
+        if (apiOnline) {
+          startAPILive();
+        } else {
+          startWebcamLive();
+        }
+      }
 
+      async function checkAPI() {
+        try {
+          const r = await fetch(`${API}/health`, {
+            signal: AbortSignal.timeout(1500),
+          });
+          return r.ok;
+        } catch (_) {
+          return false;
+        }
+      }
 
-  E.idleMsg.style.display = 'none';
-  E.resultVerdict.style.display = 'flex';
-  E.resultCounts.style.display = 'grid';
+      function startAPILive() {
+        liveMode = true;
+        setStatus("live");
 
-  E.resultVerdict.className = 'result-verdict ' + (isPass ? 'pass' : isFail ? 'fail' : '');
-  E.verdictCircle.textContent = isPass ? '✅' : isFail ? '❌' : '⏳';
-  E.verdictLabel.textContent  = isPass ? 'PASS' : isFail ? 'REJECT' : '—';
-  E.verdictDetail.textContent = isPass
-    ? 'No defects detected — product accepted'
-    : isFail
-    ? `${dets.length} defect${dets.length!==1?'s':''} detected — product rejected`
-    : 'Awaiting result';
+        // Show live camera preview in Q1 (MJPEG from backend)
+        showInput("mjpeg", `${API}/video_feed`);
 
-  
-  E.cntDefects.textContent  = dets.length;
-  E.cntMaterial.textContent = mat ? mat.toUpperCase() : '—';
-  E.cntMaterial.style.color = mat === 'steel' ? 'var(--steel)' : mat === 'wood' ? 'var(--wood)' : 'var(--muted)';
+        // Connect WebSocket for stats
+        connectWS();
 
-  
-  if (dets.length > 0) {
-    E.defectSection.style.display = 'block';
-    E.defectList.innerHTML = dets.map(d => {
-      const c = Math.round((d.conf||0) * 100);
-      return `
+        // UI — show Scan Now button
+        E.liveBtnTxt.textContent = "Stop Live Demo";
+        E.btnLive.classList.add("stop");
+        document.getElementById("btn-scan-now").style.display = "";
+        E.procTxt.textContent = "Live preview — click Scan Now to analyze";
+      }
+
+      async function startWebcamLive() {
+        try {
+          liveStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+        } catch (err) {
+          // If browser camera is blocked, fall back to backend MJPEG stream
+          startAPILive();
+          return;
+        }
+        liveMode = true;
+        setStatus("live");
+
+        // Q1: raw webcam feed
+        E.inputVideo.srcObject = liveStream;
+        showInput("video");
+
+        // UI
+        E.liveBtnTxt.textContent = "Stop Live Demo";
+        E.btnLive.classList.add("stop");
+        document.getElementById("btn-scan-now").style.display = "";
+        E.procTxt.textContent = "Live preview — click Scan Now to analyze";
+      }
+
+      /* Single-scan: call backend /scan to capture + analyze current camera frame */
+      async function scanNow() {
+        if (!liveMode) return;
+        const scanBtn = document.getElementById("btn-scan-now");
+        scanBtn.disabled = true;
+        scanBtn.querySelector("span:last-child").textContent = "Scanning...";
+        setStatus("busy");
+
+        let result = null;
+        try {
+          const r = await fetch(`${API}/scan`, {
+            signal: AbortSignal.timeout(5000),
+          });
+          if (r.ok) result = await r.json();
+        } catch (_) {}
+
+        if (!result || result.error) {
+          result = result || mockResult("live_scan");
+        }
+
+        // Show annotated output in Q2
+        if (result.output_image_b64) {
+          showOutput(
+            "image",
+            "data:image/jpeg;base64," + result.output_image_b64,
+          );
+        }
+        renderResult(result);
+        resetScanBtn();
+      }
+
+      function resetScanBtn() {
+        const scanBtn = document.getElementById("btn-scan-now");
+        scanBtn.disabled = false;
+        scanBtn.querySelector("span:last-child").textContent = "Scan Now";
+        setStatus("live");
+        E.procTxt.textContent = "Scan complete — click Scan Now again";
+      }
+
+      async function testHardware(cmd) {
+        try {
+          E.procTxt.textContent = `Testing Hardware: ${cmd}...`;
+          const r = await fetch(`${API}/hardware/trigger?cmd=${cmd}`);
+          const data = await r.json();
+          if (data.status === "ok") {
+            E.procTxt.textContent = `⚡ Hardware ${cmd} triggered on ${API}`;
+          } else {
+            E.procTxt.textContent = `⚠️ Hardware: ${data.message || "Not connected"}`;
+          }
+        } catch (e) {
+          E.procTxt.textContent = `⚠️ Error testing hardware: ${e.message}`;
+        }
+      }
+
+      let webcamPollTimer = null;
+
+      function stopLive() {
+        liveMode = false;
+        if (liveStream) {
+          liveStream.getTracks().forEach((t) => t.stop());
+          liveStream = null;
+        }
+        if (ws) {
+          ws.close();
+          ws = null;
+        }
+        if (webcamPollTimer) {
+          clearTimeout(webcamPollTimer);
+          webcamPollTimer = null;
+        }
+
+        E.inputVideo.srcObject = null;
+        E.inputVideo.style.display = "none";
+        E.inputImg.style.display = "none";
+        E.inputPlaceholder.style.display = "flex";
+
+        E.outputImg.style.display = "none";
+        E.outputPlaceholder.style.display = "flex";
+
+        hideOverlays();
+        E.liveBtnTxt.textContent = "Start Live Demo";
+        E.btnLive.classList.remove("stop");
+        E.scanLine.classList.remove("active");
+        document.getElementById("btn-scan-now").style.display = "none";
+        setStatus("idle");
+      }
+
+      /* ─── WebSocket (for API live mode) ────────────────────────── */
+      function connectWS() {
+        try {
+          ws = new WebSocket(`ws://127.0.0.1:8000/ws/live`);
+          ws.onmessage = (evt) => {
+            const d = JSON.parse(evt.data);
+            // Only update FPS in Live Demo — detection results come from Scan Now click
+            if (d.stats?.fps)
+              E.fpTag.textContent = d.stats.fps.toFixed(1) + " FPS";
+          };
+          ws.onerror = () => {};
+          ws.onclose = () => {
+            if (liveMode) setTimeout(connectWS, 2000);
+          };
+        } catch (_) {}
+      }
+
+      /* ─── Human-in-the-Loop (HITL) Mode ──────────────────────────── */
+      let hitlMode = "auto"; // 'auto' or 'manual'
+      let pendingResult = null;
+
+      function setHitlMode(mode) {
+        hitlMode = mode;
+        const btnAuto = $("hitl-auto");
+        const btnManual = $("hitl-manual");
+        const hc = $("human-card");
+        if (mode === "auto") {
+          if (btnAuto) btnAuto.className = "hitl-btn active";
+          if (btnManual) btnManual.className = "hitl-btn";
+          if (hc) hc.style.display = "none";
+        } else {
+          if (btnAuto) btnAuto.className = "hitl-btn";
+          if (btnManual) btnManual.className = "hitl-btn active manual";
+          if (pendingResult && hc) {
+            hc.style.display = "flex";
+          }
+        }
+      }
+
+      async function humanDecide(verdict) {
+        const hc = $("human-card");
+        if (hc) hc.style.display = "none";
+        if (pendingResult) {
+          pendingResult.verdict = verdict;
+          renderResultCore(pendingResult);
+
+          try {
+            await fetch(`${API}/hitl_decision`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                verdict: verdict,
+                material: pendingResult.material || "STEEL",
+                defects: (pendingResult.detections || []).length,
+              }),
+            });
+          } catch (_) {}
+          pendingResult = null;
+        }
+      }
+
+      /* ─── Render result into Q2 overlays + Q4 panel ────────────── */
+      function renderResult(r) {
+        pendingResult = r;
+        if (hitlMode === "manual") {
+          const hc = $("human-card");
+          const hcDesc = $("hc-desc");
+          if (hc && hcDesc) {
+            const rec = (r.verdict || "REJECT").toUpperCase();
+            const nD = (r.detections || []).length;
+            hcDesc.innerHTML = `AI recommends <b style="color:${rec === "REJECT" ? "#ef4444" : "#22c55e"}">${rec}</b> (${nD} defect${nD !== 1 ? "s" : ""} detected). Confirm or override:`;
+            hc.style.display = "flex";
+          }
+        } else {
+          const hc = $("human-card");
+          if (hc) hc.style.display = "none";
+        }
+        renderResultCore(r);
+      }
+
+      function renderResultCore(r) {
+        const isPass = (r.verdict || "").toUpperCase() === "PASS";
+        const isFail = (r.verdict || "").toUpperCase() === "FAIL";
+        const dets = r.detections || [];
+        const mat = (r.material || "").toLowerCase();
+        const conf = r.confidence || 0;
+
+        // ── Q2 overlays ──
+        // Material badge
+        if (mat) {
+          E.ovMaterial.style.display = "block";
+          E.ovMaterial.className = "ov-material " + mat;
+          E.ovMaterial.textContent =
+            mat === "steel"
+              ? "🔩 STEEL"
+              : mat === "aluminum"
+                ? "⚙️ ALUMINUM"
+                : "🪵 WOOD";
+        }
+        // Verdict overlay
+        if (r.verdict) {
+          E.ovVerdict.style.display = "block";
+          E.ovVerdict.className =
+            "ov-verdict " + (isPass ? "pass" : isFail ? "fail" : "");
+          E.ovVerdict.textContent = isPass ? "✓ PASS" : "✗ REJECT";
+        }
+        // Confidence bar
+        E.ovConf.style.display = "block";
+        const pct = Math.round(conf * 100);
+        E.confFill.style.width = pct + "%";
+        E.confNum.textContent = pct + "%";
+
+        // Q2 badge in label bar
+        if (r.verdict) {
+          E.outputBadge.style.display = "inline-flex";
+          E.outputBadge.className = "q-badge " + (isPass ? "pass" : "fail");
+          E.outputBadge.textContent = isPass ? "PASS" : "REJECT";
+        }
+
+        // ── Q4 results ──
+        E.idleMsg.style.display = "none";
+        E.resultVerdict.style.display = "flex";
+        E.resultCounts.style.display = "grid";
+
+        // Verdict card
+        E.resultVerdict.className =
+          "result-verdict " + (isPass ? "pass" : isFail ? "fail" : "");
+        E.verdictCircle.textContent = isPass ? "✅" : isFail ? "❌" : "⏳";
+        E.verdictLabel.textContent = isPass ? "PASS" : isFail ? "REJECT" : "—";
+        E.verdictDetail.textContent = isPass
+          ? "No defects detected — product accepted"
+          : isFail
+            ? `${dets.length} defect${dets.length !== 1 ? "s" : ""} detected — product rejected`
+            : "Awaiting result";
+
+        // Counts
+        E.cntDefects.textContent = dets.length;
+        E.cntMaterial.textContent = mat ? mat.toUpperCase() : "—";
+        E.cntMaterial.style.color =
+          mat === "steel"
+            ? "var(--steel)"
+            : mat === "wood"
+              ? "var(--wood)"
+              : "var(--muted)";
+
+        // Defect class list
+        if (dets.length > 0) {
+          E.defectSection.style.display = "block";
+          E.defectList.innerHTML = dets
+            .map((d) => {
+              const c = Math.round((d.conf || 0) * 100);
+              return `
         <div class="defect-item">
           <div class="defect-dot"></div>
-          <span class="defect-name">${d.label || d.class || 'Unknown'}</span>
+          <span class="defect-name">${d.label || d.class || "Unknown"}</span>
           <div class="defect-conf-bar">
             <div class="defect-conf-fill" style="width:${c}%"></div>
           </div>
           <span class="defect-conf-num">${c}%</span>
         </div>`;
-    }).join('');
-  } else if (isPass) {
-    E.defectSection.style.display = 'block';
-    E.defectList.innerHTML = `
+            })
+            .join("");
+        } else if (isPass) {
+          E.defectSection.style.display = "block";
+          E.defectList.innerHTML = `
       <div class="no-defect-msg">
         <div class="icon">✅</div>
         <span>Surface is clean — no defect classes detected</span>
       </div>`;
-  } else {
-    E.defectSection.style.display = 'none';
-  }
-}
+        } else {
+          E.defectSection.style.display = "none";
+        }
+      }
 
+      /* ─── Show helpers ──────────────────────────────────────────── */
+      function showInput(type, src) {
+        E.inputPlaceholder.style.display = "none";
+        E.inputVideo.style.display = "none";
+        E.inputImg.style.display = "none";
+        E.scanLine.classList.remove("active");
 
-function showInput(type, src) {
-  E.inputPlaceholder.style.display = 'none';
-  E.inputVideo.style.display = 'none';
-  E.inputImg.style.display   = 'none';
-  E.scanLine.classList.remove('active');
+        if (type === "video") {
+          E.inputVideo.style.display = "block";
+          E.scanLine.classList.add("active");
+        } else if (type === "image") {
+          E.inputImg.src = src;
+          E.inputImg.style.display = "block";
+        } else if (type === "mjpeg") {
+          // Use <img> with MJPEG src
+          E.inputImg.src = src + "?t=" + Date.now();
+          E.inputImg.style.display = "block";
+          E.scanLine.classList.add("active");
+        }
+      }
 
-  if (type === 'video') {
-    E.inputVideo.style.display = 'block';
-    E.scanLine.classList.add('active');
-  } else if (type === 'image') {
-    E.inputImg.src = src;
-    E.inputImg.style.display = 'block';
-  } else if (type === 'mjpeg') {
-    
-    E.inputImg.src = src + '?t=' + Date.now();
-    E.inputImg.style.display = 'block';
-    E.scanLine.classList.add('active');
-  }
-}
+      function showOutput(type, src) {
+        E.outputPlaceholder.style.display = "none";
+        E.outputImg.style.display = "none";
 
-function showOutput(type, src) {
-  E.outputPlaceholder.style.display = 'none';
-  E.outputImg.style.display = 'none';
+        if (type === "image" || type === "mjpeg") {
+          E.outputImg.src =
+            src + (type === "mjpeg" ? "?out=1&t=" + Date.now() : "");
+          E.outputImg.style.display = "block";
+        }
+      }
 
-  if (type === 'image' || type === 'mjpeg') {
-    E.outputImg.src = src + (type === 'mjpeg' ? '?out=1&t=' + Date.now() : '');
-    E.outputImg.style.display = 'block';
-  }
-}
+      function hideOverlays() {
+        E.ovMaterial.style.display = "none";
+        E.ovVerdict.style.display = "none";
+        E.ovConf.style.display = "none";
+        E.outputBadge.style.display = "none";
+      }
 
-function hideOverlays() {
-  E.ovMaterial.style.display = 'none';
-  E.ovVerdict.style.display  = 'none';
-  E.ovConf.style.display     = 'none';
-  E.outputBadge.style.display= 'none';
-}
+      /* ─── Status helpers ────────────────────────────────────────── */
+      function setStatus(s) {
+        if (s === "idle") {
+          E.liveDot.className = "live-dot";
+          E.liveTxt.textContent = "Idle";
+          E.spinner.classList.remove("active");
+          E.procTxt.textContent = "Ready — choose a mode above";
+        } else if (s === "processing") {
+          E.liveDot.className = "live-dot";
+          E.liveTxt.textContent = "Processing…";
+          E.spinner.classList.add("active");
+          E.procTxt.textContent = "Running inference…";
+        } else if (s === "live") {
+          E.liveDot.className = "live-dot rec";
+          E.liveTxt.textContent = "Live";
+          E.spinner.classList.remove("active");
+          E.procTxt.textContent = "Streaming live — press Stop to end";
+        }
+      }
 
+      /* ─── Mock result (when backend unavailable) ────────────────── */
+      // Steel: 10 validated classes (avg mAP@50 = 76.8%)
+      // Removed: crazing(33.8%), inclusion(58.9%), rolled_in_scale(46.9%), rolled_pit(33.9%), crease(38.9%)
+      const STEEL_CLS = [
+        "patches",
+        "pitted_surface",
+        "scratches",
+        "punching",
+        "weld_line",
+        "crescent_gap",
+        "water_spot",
+        "oil_spot",
+        "silk_spot",
+        "waist_folding",
+      ];
+      const WOOD_CLS = [
+        "crack",
+        "knot",
+        "knot_with_crack",
+        "missing_knot",
+        "resin",
+        "blue_stain",
+        "quartzite",
+        "marrow",
+      ];
 
-function setStatus(s) {
-  if (s === 'idle') {
-    E.liveDot.className = 'live-dot';
-    E.liveTxt.textContent = 'Idle';
-    E.spinner.classList.remove('active');
-    E.procTxt.textContent = 'Ready — choose a mode above';
-  } else if (s === 'processing') {
-    E.liveDot.className = 'live-dot';
-    E.liveTxt.textContent = 'Processing…';
-    E.spinner.classList.add('active');
-    E.procTxt.textContent = 'Running inference…';
-  } else if (s === 'live') {
-    E.liveDot.className = 'live-dot rec';
-    E.liveTxt.textContent = 'Live';
-    E.spinner.classList.remove('active');
-    E.procTxt.textContent = 'Streaming live — press Stop to end';
-  }
-}
+      function mockResult(fname) {
+        const mat = (fname || "").toLowerCase().includes("wood")
+          ? "wood"
+          : "steel";
+        const cls = mat === "steel" ? STEEL_CLS : WOOD_CLS;
+        const hasDefect = Math.random() < 0.5;
+        const dets = hasDefect
+          ? Array.from({ length: Math.floor(Math.random() * 3) + 1 }, () => ({
+              label: cls[Math.floor(Math.random() * cls.length)],
+              conf: +(Math.random() * 0.45 + 0.52).toFixed(2),
+            }))
+          : [];
+        return {
+          material: mat,
+          verdict: hasDefect ? "FAIL" : "PASS",
+          confidence: hasDefect
+            ? Math.max(...dets.map((d) => d.conf))
+            : Math.random() * 0.2,
+          detections: dets,
+        };
+      }
 
-const STEEL_CLS = ['patches','pitted_surface','scratches','punching',
-  'weld_line','crescent_gap','water_spot','oil_spot','silk_spot','waist_folding'];
-const WOOD_CLS  = ['crack','knot','knot_with_crack','missing_knot',
-  'resin','blue_stain','quartzite','marrow'];
-
-function mockResult(fname) {
-  const mat = (fname||'').toLowerCase().includes('wood') ? 'wood' : 'steel';
-  const cls = mat === 'steel' ? STEEL_CLS : WOOD_CLS;
-  const hasDefect = Math.random() < 0.5;
-  const dets = hasDefect
-    ? Array.from({length: Math.floor(Math.random()*3)+1}, () => ({
-        label: cls[Math.floor(Math.random()*cls.length)],
-        conf:  +(Math.random()*0.45+0.52).toFixed(2)
-      }))
-    : [];
-  return {
-    material:   mat,
-    verdict:    hasDefect ? 'FAIL' : 'PASS',
-    confidence: hasDefect ? Math.max(...dets.map(d=>d.conf)) : Math.random()*0.2,
-    detections: dets,
-  };
-}
-
-
-function drawMockBoxes(canvas, ctx, dets) {
-  const w = canvas.width, h = canvas.height;
-  ctx.strokeStyle = '#ef4444';
-  ctx.lineWidth   = 2;
-  ctx.font = '13px Inter, sans-serif';
-  ctx.fillStyle   = 'rgba(239,68,68,0.15)';
-  dets.forEach((d, i) => {
-    const x = 40 + i*60, y = 40 + i*30;
-    const bw = Math.random()*120+80, bh = Math.random()*80+50;
-    ctx.strokeRect(x, y, bw, bh);
-    ctx.fillRect(x, y, bw, bh);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(x, y-18, ctx.measureText(d.label).width+8, 18);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(d.label, x+4, y-4);
-    ctx.fillStyle = 'rgba(239,68,68,0.15)';
-  });
-}
-</script>
-</body>
+      /* ─── Draw mock boxes on canvas (webcam fallback) ───────────── */
+      function drawMockBoxes(canvas, ctx, dets) {
+        const w = canvas.width,
+          h = canvas.height;
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 2;
+        ctx.font = "13px Inter, sans-serif";
+        ctx.fillStyle = "rgba(239,68,68,0.15)";
+        dets.forEach((d, i) => {
+          const x = 40 + i * 60,
+            y = 40 + i * 30;
+          const bw = Math.random() * 120 + 80,
+            bh = Math.random() * 80 + 50;
+          ctx.strokeRect(x, y, bw, bh);
+          ctx.fillRect(x, y, bw, bh);
+          ctx.fillStyle = "#ef4444";
+          ctx.fillRect(x, y - 18, ctx.measureText(d.label).width + 8, 18);
+          ctx.fillStyle = "#fff";
+          ctx.fillText(d.label, x + 4, y - 4);
+          ctx.fillStyle = "rgba(239,68,68,0.15)";
+        });
+      }
+    </script>
+  </body>
 </html>

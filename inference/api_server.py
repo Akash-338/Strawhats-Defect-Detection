@@ -1,4 +1,19 @@
+"""
+api_server.py
+=============
+RVCE Hackathon 2026 — Team Strawhat-Pirates
+FastAPI backend: live MJPEG stream + WebSocket stats + inference pipeline
 
+Endpoints:
+  GET  /health          — health check
+  GET  /stats           — cumulative counters
+  GET  /video_feed      — MJPEG camera stream (for dashboard <img>)
+  WS   /ws/live         — WebSocket: sends JSON updates every frame
+  POST /detect          — single-image inference (REST)
+
+Start:
+  uvicorn inference.api_server:app --host 0.0.0.0 --port 8000 --reload
+"""
 
 import asyncio
 import io
@@ -16,6 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 import uvicorn
 
+# ── Project root ───────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
@@ -23,6 +39,7 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
+# ── App ────────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Strawhat-Pirates Inspection API", version="2.0.0")
 app.add_middleware(
     CORSMiddleware,
@@ -31,6 +48,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Global state ───────────────────────────────────────────────────────────────
 stats: Dict[str, Any] = {
     "total_scanned": 0,
     "total_defects": 0,
@@ -39,18 +57,23 @@ stats: Dict[str, Any] = {
     "fps": 0.0,
 }
 
+# Latest frame data (written by inference loop, read by WebSocket/MJPEG)
 current_frame: Optional[bytes] = None          # JPEG bytes of annotated frame
 current_live:  Dict[str, Any]  = {}            # latest detection result
 _latest_raw_frame: Optional[np.ndarray] = None  # raw BGR frame for /scan endpoint
 
+# Connected WebSocket clients
 ws_clients: List[WebSocket] = []
 
+# ── Try to import inference pipeline ──────────────────────────────────────────
 _pipeline_loaded = False
 _pipeline = None
 
 def _try_load_pipeline():
     global _pipeline_loaded, _pipeline
     try:
+        # Import the full inference pipeline
+        # This will work once models are trained
         from inference.pipeline import InferencePipeline
         _pipeline = InferencePipeline()
         _pipeline_loaded = True
@@ -62,6 +85,7 @@ def _try_load_pipeline():
 
 _try_load_pipeline()
 
+# ── Hardware Serial Bridge for ESP32 / Arduino ────────────────────────────────
 _serial_bridge = None
 def _try_load_serial_bridge():
     global _serial_bridge
@@ -88,16 +112,22 @@ def _send_esp32_command(material: str, defects: int, verdict: str):
         
         logger.info(f"⚡ Hardware trigger: {cmd} (defects={defects}, verdict={verdict})")
         
+        # 1. Send status update first (sets material and defect count on OLED)
         _serial_bridge.send(f"STATUS:{mat},{defect_val}")
         time.sleep(0.05)
         
+        # 2. Send primary hardware command (REJECT or PASS) with retry logic
         success = _serial_bridge.send(cmd)
         if not success and _serial_bridge.is_connected():
             _serial_bridge.send(cmd)
 
+# ── Mock detection (used when pipeline is not ready) ───────────────────────────
 import random
 
-
+# ── Steel: 10 validated classes (removed 5 weak performers < 60% mAP) ──────────
+# Removed: crazing(33.8%), inclusion(58.9%), rolled_in_scale(46.9%),
+#          rolled_pit(33.9%), crease(38.9%)
+# Remaining avg mAP@50 = 76.8%
 STEEL_CLASSES = [
     'patches',        # 87.0%
     'pitted_surface', # 77.5%
@@ -111,7 +141,8 @@ STEEL_CLASSES = [
     'waist_folding',  # 76.0%
 ]
 
-
+# Class IDs to SKIP during real YOLO inference (0-indexed, matches dataset.yaml order)
+# 0:crazing, 1:inclusion, 4:rolled_in_scale, 12:rolled_pit, 13:crease
 STEEL_SKIP_IDS = {0, 1, 4, 12, 13}
 
 WOOD_CLASSES = ['crack', 'knot', 'knot_with_crack', 'missing_knot',
@@ -119,6 +150,7 @@ WOOD_CLASSES = ['crack', 'knot', 'knot_with_crack', 'missing_knot',
                  'overgrown', 'dead_knot']
 
 def _mock_detect(frame: np.ndarray) -> Dict[str, Any]:
+    """Realistic mock detection for demo purposes."""
     material = random.choice(['steel', 'wood'])
     classes  = STEEL_CLASSES if material == 'steel' else WOOD_CLASSES
     has_defect = random.random() < 0.45  # 45% defect rate for demo
@@ -150,15 +182,18 @@ def _mock_detect(frame: np.ndarray) -> Dict[str, Any]:
         confidence  = random.uniform(0.0, 0.25)
         top_class   = None
 
+    # Draw mock bounding box on frame
     annotated = frame.copy()
     h, w = annotated.shape[:2]
 
+    # Material badge
     mat_color = (255, 165, 0) if material == 'steel' else (0, 200, 80)
     cv2.rectangle(annotated, (8, 8), (140, 36), (0,0,0), -1)
     cv2.rectangle(annotated, (8, 8), (140, 36), mat_color, 1)
     cv2.putText(annotated, f"{'STEEL' if material=='steel' else 'WOOD'}",
                 (16, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.6, mat_color, 2)
 
+    # Verdict overlay
     v_color = (50, 200, 80) if verdict == 'PASS' else (80, 80, 240)
     v_text  = "PASS" if verdict == 'PASS' else "REJECT"
     txt_w   = 120
@@ -168,6 +203,7 @@ def _mock_detect(frame: np.ndarray) -> Dict[str, Any]:
                 cv2.FONT_HERSHEY_SIMPLEX, 0.65, v_color, 2)
 
     if has_defect and detections:
+        # Draw bounding box for first detection
         x1 = random.randint(w//8, w//2)
         y1 = random.randint(h//8, h//2)
         x2 = x1 + random.randint(60, 180)
@@ -191,6 +227,7 @@ def _mock_detect(frame: np.ndarray) -> Dict[str, Any]:
     }
 
 
+# ── WebSocket broadcast ────────────────────────────────────────────────────────
 async def broadcast(data: Dict[str, Any]):
     dead = []
     for client in ws_clients:
@@ -202,9 +239,11 @@ async def broadcast(data: Dict[str, Any]):
         ws_clients.remove(d)
 
 
+# ── Background inference loop ──────────────────────────────────────────────────
 _camera_task = None
 
 async def inference_loop():
+    """Capture webcam, run inference, update global state and broadcast."""
     global current_frame, current_live, stats
 
     cam_src = os.getenv("CAM_SOURCE", "auto")
@@ -217,6 +256,7 @@ async def inference_loop():
             logger.info(f"Opening camera source: {idx}")
     
     if cap is None:
+        # Auto-scan: try index 1 (mobile cam / DroidCam) first, then 0
         for idx in [1, 0, 2]:
             c = cv2.VideoCapture(idx)
             if c.isOpened():
@@ -236,10 +276,11 @@ async def inference_loop():
     frame_count = 0
 
     while True:
+        # ── Grab frame ──────────────────────────────────────────────
+        is_no_cam = False
         if cap is not None:
             ret, frame = cap.read()
             if not ret or frame is None:
-                # Attempt to re-open camera 1 / 0
                 for idx in [1, 0, 2]:
                     c = cv2.VideoCapture(idx)
                     if c.isOpened():
@@ -251,14 +292,27 @@ async def inference_loop():
                             break
                         c.release()
                 if not ret or frame is None:
+                    is_no_cam = True
                     frame = _test_pattern()
         else:
+            is_no_cam = True
             frame = _test_pattern()
 
+        # Store raw frame for /scan endpoint
         global _latest_raw_frame
         _latest_raw_frame = frame.copy()
 
-        if _pipeline_loaded and _pipeline is not None:
+        # ── Run inference ────────────────────────────────────────────
+        if is_no_cam:
+            result = {
+                "material": "STEEL",
+                "verdict": "PASS",
+                "confidence": 0.0,
+                "defect_count": 0,
+                "detections": [],
+                "annotated": frame,
+            }
+        elif _pipeline_loaded and _pipeline is not None:
             try:
                 result = _pipeline.run(frame)
             except Exception as e:
@@ -274,6 +328,7 @@ async def inference_loop():
         else:
             result = _mock_detect(frame)
 
+        # ── Update counters & hardware trigger ────────────────────────
         global _last_hardware_verdict
         verdict = result.get("verdict", "IDLE")
         mat = str(result.get("material", "STEEL"))
@@ -286,7 +341,9 @@ async def inference_loop():
         elif verdict == "PASS":
             stats["passed"]        += 1
 
+        # ESP32 triggers only via /detect endpoint (Feed Image / Scan Now)
 
+        # ── FPS ──────────────────────────────────────────────────────
         frame_count += 1
         now = time.perf_counter()
         elapsed = now - fps_timer
@@ -295,11 +352,13 @@ async def inference_loop():
             frame_count   = 0
             fps_timer     = now
 
+        # ── Encode annotated frame as JPEG ───────────────────────────
         annotated = result.get("annotated", frame)
         ok, buf = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 80])
         if ok:
             current_frame = buf.tobytes()
 
+        # ── Store latest result ───────────────────────────────────────
         current_live = {
             "stats":       stats.copy(),
             "material":    result.get("material"),
@@ -311,6 +370,7 @@ async def inference_loop():
             "morphology":  result.get("morphology"),
         }
 
+        # ── Broadcast to WebSocket clients ────────────────────────────
         if ws_clients:
             await broadcast(current_live)
 
@@ -321,6 +381,7 @@ async def inference_loop():
 
 
 def _test_pattern() -> np.ndarray:
+    """Colour-bar test pattern when no webcam is available."""
     img = np.zeros((480, 640, 3), dtype=np.uint8)
     colours = [(255,0,0),(0,255,0),(0,0,255),(255,255,0),(0,255,255),(255,0,255),(128,128,128)]
     w = 640 // len(colours)
@@ -338,6 +399,7 @@ async def startup():
     logger.info("🚀 Strawhat-Pirates Inspection API ready at http://0.0.0.0:8000")
 
 
+# ── Routes ─────────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
     return {
@@ -366,6 +428,7 @@ def hitl_decision(payload: Dict[str, Any]):
 @app.get("/hardware/trigger")
 @app.post("/hardware/trigger")
 def hardware_trigger(cmd: str = "REJECT"):
+    """Direct manual hardware trigger endpoint (REJECT, PASS, RESET)."""
     clean_cmd = cmd.strip().upper()
     if _serial_bridge and _serial_bridge.is_connected():
         _serial_bridge.send(clean_cmd)
@@ -378,6 +441,7 @@ def hardware_trigger(cmd: str = "REJECT"):
 
 @app.get("/video_feed")
 async def video_feed():
+    """MJPEG stream — connect with <img src='/video_feed'>."""
     async def stream():
         while True:
             if current_frame:
@@ -398,13 +462,16 @@ async def video_feed():
 
 @app.websocket("/ws/live")
 async def ws_live(ws: WebSocket):
+    """WebSocket — sends JSON update every frame."""
     await ws.accept()
     ws_clients.append(ws)
     logger.info(f"WebSocket client connected ({len(ws_clients)} total)")
     try:
+        # Send current state immediately on connect
         if current_live:
             await ws.send_json(current_live)
         while True:
+            # Keep connection alive — data is pushed by inference_loop
             await ws.receive_text()
     except WebSocketDisconnect:
         pass
@@ -443,6 +510,7 @@ async def detect_image(image: UploadFile = File(...)) -> Dict[str, Any]:
     else:
         stats["passed"]        += 1
 
+    # Trigger ESP32 serial update on Feed Image (always fires — one-shot user action)
     _send_esp32_command(mat, n_defects, verdict)
 
     import base64
@@ -465,6 +533,7 @@ async def detect_image(image: UploadFile = File(...)) -> Dict[str, Any]:
 
 @app.get("/scan")
 async def scan_live() -> Dict[str, Any]:
+    """Capture current camera frame, run inference, trigger ESP32. Used by Scan Now button."""
     global _latest_raw_frame
     if _latest_raw_frame is None:
         return {"error": "No camera frame available"}
@@ -484,6 +553,7 @@ async def scan_live() -> Dict[str, Any]:
     mat = str(result.get("material", "STEEL"))
     n_defects = len(result.get("detections", []))
 
+    # Trigger ESP32 (one-shot from user click)
     _send_esp32_command(mat, n_defects, verdict)
 
     import base64
